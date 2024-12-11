@@ -9,11 +9,14 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.media.MediaDrm;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Settings;
 import android.util.ArrayMap;
 import android.util.Base64;
+
+import com.google.android.gms.ads.identifier.AdvertisingIdClient;
 import com.xiaoc.warlock.BuildConfig;
 import com.xiaoc.warlock.Core.BaseCollector;
 import com.xiaoc.warlock.Util.XCommandUtil;
@@ -23,7 +26,9 @@ import com.xiaoc.warlock.Util.XString;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -134,6 +139,18 @@ public class BasicInfoCollector extends BaseCollector {
         } catch (Exception e) {
             putFailedInfo("a6");
             XLog.e("DrmCollector", "Failed to collect DRM ID: " + e.getMessage());
+        }
+        try {
+            getFingerPrintForGather();
+    } catch (Exception e) {
+        XLog.e("FingerprintCollector", "Failed to collect fingerprints: " + e.getMessage());
+        putFailedInfo("a18");
+    }
+        try {
+            getAaid();
+        } catch (Exception e) {
+            XLog.e("AAIDCollector", "Failed to get AAID: " + e.getMessage());
+            putFailedInfo("a2");
         }
     }
     public void getAppPath() {
@@ -307,7 +324,7 @@ public class BasicInfoCollector extends BaseCollector {
             String contextPkg = context.getPackageName();
             String appInfoPkg = context.getApplicationInfo().packageName;
             String pmPkg = context.getPackageManager().getPackageInfo(context.getPackageName(), 0).packageName;
-            String buildConfigPkg = BuildConfig.APPPACKAGE;
+            String buildConfigPkg = BuildConfig.APP_PACKAGE;
 
             // 检查所有包名是否一致
             boolean allMatch = XString.compareIgnoreSpaces(contextPkg, appInfoPkg) &&
@@ -390,6 +407,39 @@ public class BasicInfoCollector extends BaseCollector {
             settingValueInfo.put("ad_aaid", "Not available");
         }
         putInfo("a13", settingValueInfo);
+    }
+    private void getAaid(){
+        Map<String, String> aaidMap = new LinkedHashMap<>();
+
+        // 首先尝试通过 Settings.Secure 获取
+        String secureAaid = Settings.Secure.getString(
+                context.getContentResolver(),
+                "advertising_id"
+        );
+
+        if (secureAaid != null && !secureAaid.isEmpty()) {
+            aaidMap.put("secure_aaid", secureAaid);
+        }
+
+        // 然后尝试通过 Google API 获取
+        try {
+            AdvertisingIdClient.Info adInfo = AdvertisingIdClient.getAdvertisingIdInfo(context);
+            if (adInfo != null) {
+                String googleAaid = adInfo.getId();
+                if (googleAaid != null && !googleAaid.isEmpty()) {
+                    aaidMap.put("google_aaid", googleAaid);
+                }
+            }
+        } catch (Exception e) {
+            XLog.e("AAIDCollector", "Failed to get Google AAID: " + e.getMessage());
+        }
+
+        // 检查是否至少有一个值
+        if (!aaidMap.isEmpty()) {
+            putInfo("a2", aaidMap);
+        } else {
+            putFailedInfo("a2");
+        }
     }
     @SuppressLint("HardwareIds")
     private void getBluetoothAddress() {
@@ -523,5 +573,97 @@ public class BasicInfoCollector extends BaseCollector {
         }
 
         return gsfId;
+    }
+    private void getFingerPrintForGather(){
+        StringBuilder concatenated = new StringBuilder();
+        StringBuilder indexBuilder = new StringBuilder();
+        boolean hasValidValue = false;
+
+        for (int i = 0; i < BuildConfig.FINGERPRINT_REGIONS.length; i++) {
+            String region = BuildConfig.FINGERPRINT_REGIONS[i];
+            String propName;
+            String fingerprint;
+
+            // 特殊处理 build region
+            if ("build".equals(region)) {
+                fingerprint = getProperty("ro.build.fingerprint");
+                if (fingerprint == null || fingerprint.isEmpty()) {
+                    fingerprint = getProperty("ro.build.build.fingerprint");
+                }
+            } else {
+                propName = "ro." + region + ".build.fingerprint";
+                fingerprint = getProperty(propName);
+            }
+
+            if (fingerprint != null && !fingerprint.isEmpty()) {
+                hasValidValue = true;
+                // 计算单个指纹的MD5
+                String md5 = calculateMD5(fingerprint);
+                // 拼接格式：region=md5
+                if (concatenated.length() > 0) {
+                    concatenated.append("&");
+                }
+                concatenated.append(region).append("=").append(md5);
+
+                // 记录索引（从1开始）
+                if (indexBuilder.length() > 0) {
+                    indexBuilder.append(",");
+                }
+                indexBuilder.append(i + 1);
+            }
+        }
+        XLog.d(concatenated.toString());
+        if (hasValidValue) {
+            // 创建结果Map
+            Map<String, String> resultMap = new LinkedHashMap<>();
+            // 计算最终的MD5
+            resultMap.put("md5", calculateMD5(concatenated.toString()));
+            // 添加索引字符串
+            resultMap.put("index", indexBuilder.toString());
+
+            putInfo("a18", resultMap);
+        } else {
+            putFailedInfo("a18");
+        }
+    }
+    private String getProperty(String key) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                // 使用反射获取 SystemProperties
+                Class<?> systemProperties = Class.forName("android.os.SystemProperties");
+                Method getMethod = systemProperties.getMethod("get", String.class);
+                Object value = getMethod.invoke(null, key);
+                return value != null ? value.toString() : "";
+            } else {
+                // Android P 以下版本直接使用 SystemProperties
+                Class<?> systemProperties = Class.forName("android.os.SystemProperties");
+                Method getMethod = systemProperties.getMethod("get", String.class);
+                Object value = getMethod.invoke(null, key);
+                return value != null ? value.toString() : "";
+            }
+        } catch (Exception e) {
+            XLog.e("FingerprintCollector", "Failed to get property " + key + ": " + e.getMessage());
+            return "";
+        }
+    }
+
+    private String calculateMD5(String input) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] messageDigest = md.digest(input.getBytes());
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : messageDigest) {
+                String hex = Integer.toHexString(0xFF & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            XLog.e("FingerprintCollector", "Failed to calculate MD5: " + e.getMessage());
+            return "";
+        }
     }
 }

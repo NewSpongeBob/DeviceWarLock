@@ -3,7 +3,10 @@ package com.xiaoc.warlock.Core;
 import android.content.Context;
 
 import com.xiaoc.warlock.Core.collector.BasicInfoCollector;
-import com.xiaoc.warlock.Core.collector.StatCollector;
+import com.xiaoc.warlock.Core.collector.MiscInfoCollector;
+import com.xiaoc.warlock.Core.collector.PhoneInfoCollector;
+import com.xiaoc.warlock.Core.collector.StatInfoCollector;
+import com.xiaoc.warlock.Core.collector.SystemInfoCollector;
 import com.xiaoc.warlock.Util.Xson;
 
 import java.util.Arrays;
@@ -39,7 +42,10 @@ public class Warlock {
     private List<BaseCollector> initCollectors() {
         return Arrays.asList(
                 new BasicInfoCollector(context),
-                new StatCollector(context)
+                new StatInfoCollector(context),
+                new PhoneInfoCollector(context),
+                new MiscInfoCollector(context),
+                new SystemInfoCollector(context)
                 // 添加更多收集器...
         );
     }

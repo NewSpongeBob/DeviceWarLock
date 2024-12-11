@@ -1,5 +1,9 @@
 package com.xiaoc.warlock.Util;
 
+import android.content.Context;
+import android.os.Build;
+import android.os.Environment;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -45,7 +49,46 @@ public class XFile {
             return false;
         }
     }
+    /**
+     * 写入字符串到私有目录下的文件
+     * @param context 上下文
+     * @param fileName 文件路径
+     * @param content 要写入的内容
+     * @param append 是否追加模式
+     * @return 是否写入成功
+     */
+    public static  boolean writeExternalFile(Context context,String fileName, String content, boolean append) {
+        try {
+            File file;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                // Android 10 及以上
+                File dir = context.getExternalFilesDir(null);
+                if (dir == null) return false;
+                file = new File(dir, fileName);
+            } else {
+                // Android 10 以下
+                File dir = new File(Environment.getExternalStorageDirectory(),
+                        "Android/data/" + context.getPackageName());
+                file = new File(dir, fileName);
+            }
 
+            // 确保目录存在
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists()) {
+                if (!parent.mkdirs()) return false;
+            }
+
+            // 写入文件
+            try (FileWriter writer = new FileWriter(file, append)) {
+                writer.write(content);
+                return true;
+            }
+
+        } catch (IOException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
     /**
      * 复制文件
      * @param sourcePath 源文件路径

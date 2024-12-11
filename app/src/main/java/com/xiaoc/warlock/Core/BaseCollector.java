@@ -29,7 +29,17 @@ public abstract class BaseCollector {
             XLog.e("BaseCollector", "Failed to collect " + key + ": " + e.getMessage());
         }
     }
-
+    /**
+     * 存储长整型的信息
+     */
+    protected void putInfo(String key, long value) {
+        try {
+            Xson.put(key, new InfoValue(0, String.valueOf(value)));
+        } catch (Exception e) {
+            Xson.put(key, InfoValue.fail());
+            XLog.e("BaseCollector", "Failed to collect " + key + ": " + e.getMessage());
+        }
+    }
     /**
      * 存储列表信息
      */

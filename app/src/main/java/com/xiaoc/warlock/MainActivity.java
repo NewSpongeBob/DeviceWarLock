@@ -1,6 +1,7 @@
 package com.xiaoc.warlock;
 
 import android.content.Context;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
@@ -10,8 +11,11 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.xiaoc.warlock.Core.Warlock;
 import com.xiaoc.warlock.Util.NativeEngine;
+import com.xiaoc.warlock.Util.XFile;
 import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.Util.Xson;
+
+import org.lsposed.hiddenapibypass.HiddenApiBypass;
 
 public class MainActivity extends AppCompatActivity {
     private Context context;
@@ -20,6 +24,9 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // 初始化日志系统
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            HiddenApiBypass.addHiddenApiExemptions("");
+        }
         XLog.init(this, XLog.DEBUG, true);
 
         //开始获取指纹信息
@@ -30,6 +37,7 @@ public class MainActivity extends AppCompatActivity {
         // 延迟3秒后执行
         String jsonResult = Xson.getMapString(true);
         XLog.d(jsonResult);
+        XFile.writeExternalFile(this,"log.txt",jsonResult,true);
 //        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
 //            @Override
 //            public void run() {
