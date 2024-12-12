@@ -109,7 +109,73 @@ public class XFile {
             return false;
         }
     }
+    /**
+     * 写入字符串到应用私有目录下的文件
+     * @param context 上下文
+     * @param fileName 文件名
+     * @param content 要写入的内容
+     * @param append 是否追加模式
+     * @return 是否写入成功
+     */
+    public static boolean writePrivateFile(Context context, String fileName, String content, boolean append) {
+        try {
+            // 获取应用私有目录
+            File dir = context.getFilesDir();  // /data/data/包名/files/
+            // 或者使用 context.getDir("custom_dir", Context.MODE_PRIVATE) 创建自定义子目录
 
+            File file = new File(dir, fileName);
+
+            // 确保父目录存在
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists()) {
+                if (!parent.mkdirs()) return false;
+            }
+
+            // 写入文件
+            try (FileWriter writer = new FileWriter(file, append)) {
+                writer.write(content);
+                writer.flush();
+                return true;
+            }
+
+        } catch (Exception e) {
+            XLog.e("FileUtils", "Failed to write private file: " + e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * 写入字符串到应用私有缓存目录下的文件
+     * @param context 上下文
+     * @param fileName 文件名
+     * @param content 要写入的内容
+     * @param append 是否追加模式
+     * @return 是否写入成功
+     */
+    public static boolean writePrivateCacheFile(Context context, String fileName, String content, boolean append) {
+        try {
+            // 获取应用私有缓存目录
+            File dir = context.getCacheDir();  // /data/data/包名/cache/
+            File file = new File(dir, fileName);
+
+            // 确保父目录存在
+            File parent = file.getParentFile();
+            if (parent != null && !parent.exists()) {
+                if (!parent.mkdirs()) return false;
+            }
+
+            // 写入文件
+            try (FileWriter writer = new FileWriter(file, append)) {
+                writer.write(content);
+                writer.flush();
+                return true;
+            }
+
+        } catch (Exception e) {
+            XLog.e("FileUtils", "Failed to write cache file: " + e.getMessage());
+            return false;
+        }
+    }
     /**
      * 删除文件或目录
      * @param path 文件或目录路径

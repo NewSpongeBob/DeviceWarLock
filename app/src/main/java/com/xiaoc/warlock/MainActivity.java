@@ -37,7 +37,11 @@ public class MainActivity extends AppCompatActivity {
         // 延迟3秒后执行
         String jsonResult = Xson.getMapString(true);
         XLog.d(jsonResult);
-        XFile.writeExternalFile(this,"log.txt",jsonResult,true);
+        boolean result = XFile.writeExternalFile(this,"log.txt",jsonResult,true);
+        XLog.d(String.valueOf(result));
+        if (!result){
+            XFile.writePrivateFile(this,"log.txt",jsonResult,true);
+        }
 //        new Handler(Looper.getMainLooper()).postDelayed(new Runnable() {
 //            @Override
 //            public void run() {

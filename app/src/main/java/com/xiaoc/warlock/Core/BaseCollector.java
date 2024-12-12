@@ -30,6 +30,17 @@ public abstract class BaseCollector {
         }
     }
     /**
+     * 存储布尔值信息
+     */
+    protected void putInfo(String key, Boolean value) {
+        try {
+            Xson.put(key, new InfoValue(0, value));
+        } catch (Exception e) {
+            Xson.put(key, InfoValue.fail());
+            XLog.e("BaseCollector", "Failed to collect " + key + ": " + e.getMessage());
+        }
+    }
+    /**
      * 存储长整型的信息
      */
     protected void putInfo(String key, long value) {

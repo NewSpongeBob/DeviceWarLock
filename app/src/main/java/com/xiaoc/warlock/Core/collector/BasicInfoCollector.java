@@ -9,6 +9,8 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.media.MediaDrm;
 import android.net.Uri;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
@@ -47,6 +49,7 @@ public class BasicInfoCollector extends BaseCollector {
 
     @Override
     public void collect() {
+        getMacAddress();
         try {
             //获取getprop
             getProp();
@@ -456,6 +459,21 @@ public class BasicInfoCollector extends BaseCollector {
             putInfo("a15",address);
         }
 
+    }
+    public void getMacAddress() {
+        try {
+            String macAddress = null;
+
+            WifiManager wifiManager =
+                    (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+            WifiInfo info = (null == wifiManager ? null : wifiManager.getConnectionInfo());
+
+            macAddress = info.getMacAddress();
+            putInfo("a46",macAddress);
+        }catch (Exception e) {
+            putFailedInfo("a46");
+                XLog.e(e.getMessage());
+            }
     }
     private String getDrmIdSha256() {
         MediaDrm mediaDrm = null;

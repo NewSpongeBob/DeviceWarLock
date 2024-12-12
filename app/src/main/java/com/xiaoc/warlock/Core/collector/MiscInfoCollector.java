@@ -1,32 +1,47 @@
 package com.xiaoc.warlock.Core.collector;
 
+import android.annotation.SuppressLint;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ConfigurationInfo;
+import android.hardware.input.InputManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
+import android.provider.Settings;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
+import android.util.DisplayMetrics;
+import android.view.InputDevice;
+import android.view.WindowManager;
+import android.view.inputmethod.InputMethodInfo;
+import android.view.inputmethod.InputMethodManager;
+import android.view.inputmethod.InputMethodSubtype;
 
+import com.xiaoc.warlock.BuildConfig;
 import com.xiaoc.warlock.Core.BaseCollector;
 import com.xiaoc.warlock.Util.XFile;
 import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.Util.XString;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import javax.microedition.khronos.egl.EGL10;
 import javax.microedition.khronos.egl.EGLContext;
@@ -48,8 +63,15 @@ public class MiscInfoCollector  extends BaseCollector {
         collectNetworkInterface(); // a41
         collectOpenGLVersion();    // a42
         collectProcessorCount();   // a43
+        collectReflectionAvailable(); //a44
         collectNetworkCountry();   // a45
         collectNetState();         // a49
+        collectScreenInfo();       // a54
+        collectStorageSerial();    // a55
+        collectDeviceSerial();     // a56
+        collectStorageCID();       // a57
+        collectInputDevices();     // a58
+        collectInputMethod();      // a59
     }
     /**
      * 获取OpenGL ES版本
@@ -435,6 +457,357 @@ public class MiscInfoCollector  extends BaseCollector {
             }
         } catch (Exception e) {
             XLog.e(TAG, "Failed to get CPU temperature: " + e.getMessage());
+        }
+    }
+    /**
+     * 检测当前设备是否能够正常调用反射
+     */
+    private void collectReflectionAvailable(){
+        try {
+            boolean reflectionAvailable = false;
+
+            // 检查反射是否可用
+            try {
+                Class<?> statClass = Class.forName("android.system.StructStat");
+                reflectionAvailable = true;
+            } catch (Exception e) {
+                reflectionAvailable = false;
+            }
+
+            putInfo("a44", reflectionAvailable);
+
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to check reflection availability: " + e.getMessage());
+            putFailedInfo("a44");
+        }
+    }
+    /**
+     * 获取屏幕亮度、屏幕宽高和屏幕超时时间
+     */
+    private  void collectScreenInfo(){
+        try {
+            Map<String, Object> result = new LinkedHashMap<>();
+
+            // 获取屏幕亮度
+            try {
+                int brightness = Settings.System.getInt(context.getContentResolver(),
+                        Settings.System.SCREEN_BRIGHTNESS);
+                result.put("b", brightness);
+            } catch (Exception e) {
+                XLog.e(TAG, "Failed to get screen brightness: " + e.getMessage());
+            }
+
+            WindowManager windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+            DisplayMetrics realMetrics = new DisplayMetrics();
+            windowManager.getDefaultDisplay().getRealMetrics(realMetrics);
+            result.put("w", realMetrics.widthPixels);
+            result.put("h", realMetrics.heightPixels);
+
+            // 获取屏幕超时时间（单位：毫秒）
+            try {
+                int timeout = Settings.System.getInt(context.getContentResolver(),
+                        Settings.System.SCREEN_OFF_TIMEOUT);
+                result.put("t", timeout);
+            } catch (Exception e) {
+                XLog.e(TAG, "Failed to get screen timeout: " + e.getMessage());
+            }
+
+            putInfo("a54", result);
+
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to collect screen info: " + e.getMessage());
+            putFailedInfo("a54");
+        }
+    }
+    /**
+     * 获取内部存储序列号
+     */
+    private void collectStorageSerial(){
+        try {
+            String serial = "";
+            File file = new File(BuildConfig.STORAGE_SERIAL_PATH);
+
+            if (file.exists() && file.canRead()) {
+                try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                    serial = reader.readLine();
+                    if (serial != null) {
+                        serial = serial.trim();
+                    }
+                }
+            }
+
+            if (!XString.isEmpty(serial)) {
+                putInfo("a55", serial);
+            } else {
+                putFailedInfo("a55");
+            }
+
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to read storage serial: " + e.getMessage());
+            putFailedInfo("a55");
+        }
+    }
+
+    /**
+     * 获取设备序列号
+     */
+    private void collectDeviceSerial(){
+        try {
+            String serial = "";
+            File file = new File(BuildConfig.SERIAL_PATH);
+
+            if (file.exists() && file.canRead()) {
+                try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                    serial = reader.readLine();
+                    if (serial != null) {
+                        serial = serial.trim();
+                    }
+                }
+            }
+
+            if (!XString.isEmpty(serial)) {
+                putInfo("a56", serial);
+            } else {
+                putFailedInfo("a56");
+            }
+
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to read device serial: " + e.getMessage());
+            putFailedInfo("a56");
+        }
+    }
+    /**
+     * 获取内部存储SD卡的CID
+     */
+    private void collectStorageCID(){
+        try {
+            String cid = "";
+            File file = new File(BuildConfig.CID_PATH);
+
+            if (file.exists() && file.canRead()) {
+                try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                    cid = reader.readLine();
+                    if (cid != null) {
+                        cid = cid.trim();
+                    }
+                }
+            }
+
+            if (!XString.isEmpty(cid)) {
+                putInfo("a57", cid);
+            } else {
+                putFailedInfo("a57");
+            }
+
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to read storage CID: " + e.getMessage());
+            putFailedInfo("a57");
+        }
+    }
+    /**
+     * 获取注册的input设备信息
+     */
+    private void collectInputDevices(){
+        List<Map<String, String>> devices = null;
+
+        // 首先尝试从文件读取
+        devices = getDevicesFromFile();
+
+        // 如果文件读取失败，尝试使用InputManager
+        if (devices == null || devices.isEmpty()) {
+            devices = getDevicesFromInputManager();
+        }
+
+        if (devices != null && !devices.isEmpty()) {
+            putInfo("a58", devices);
+        } else {
+            putFailedInfo("a58");
+        }
+    }
+    private List<Map<String, String>> getDevicesFromFile() {
+        List<Map<String, String>> devices = new ArrayList<>();
+        File file = new File(BuildConfig.DEVICES_PATH);
+
+        if (file.exists() && file.canRead()) {
+            try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+                Map<String, String> currentDevice = null;
+                String line;
+
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+
+                    if (line.isEmpty()) {
+                        if (currentDevice != null && !currentDevice.isEmpty()) {
+                            devices.add(currentDevice);
+                        }
+                        currentDevice = new LinkedHashMap<>();
+                        continue;
+                    }
+
+                    if (currentDevice == null) {
+                        currentDevice = new LinkedHashMap<>();
+                    }
+
+                    // 解析各种设备信息
+                    if (line.startsWith("N: Name=")) {
+                        currentDevice.put("n", line.substring(8).replace("\"", "").trim());
+                    } else if (line.startsWith("S: Sysfs=")) {
+                        currentDevice.put("s", line.substring(8).replace("\"", "").trim());
+                    } else if (line.startsWith("I: Bus=")) {
+                        // 解析Bus、Vendor、Product、Version信息
+                        String[] parts = line.split("\\s+");
+                        for (String part : parts) {
+                            if (part.startsWith("Bus=")) {
+                                currentDevice.put("b", part.substring(4));
+                            } else if (part.startsWith("Vendor=")) {
+                                currentDevice.put("v", part.substring(7));
+                            } else if (part.startsWith("Product=")) {
+                                currentDevice.put("p", part.substring(8));
+                            } else if (part.startsWith("Version=")) {
+                                currentDevice.put("ver", part.substring(8));
+                            }
+                        }
+                    } else if (line.startsWith("H: Handlers=")) {
+                        currentDevice.put("h", line.substring(11).trim());
+                    } else if (line.startsWith("B: PROP=")) {
+                        currentDevice.put("prop", line.substring(8).trim());
+                    }
+                }
+
+                // 添加最后一个设备
+                if (currentDevice != null && !currentDevice.isEmpty()) {
+                    devices.add(currentDevice);
+                }
+            } catch (Exception e) {
+                XLog.e(TAG, "Failed to read from file: " + e.getMessage());
+                return null;
+            }
+        }
+
+        return devices;
+    }
+
+    @SuppressLint("MissingPermission")
+    private List<Map<String, String>> getDevicesFromInputManager() {
+        List<Map<String, String>> devices = new ArrayList<>();
+
+        try {
+            InputManager inputManager = (InputManager) context.getSystemService(Context.INPUT_SERVICE);
+            int[] deviceIds = inputManager.getInputDeviceIds();
+
+            for (int deviceId : deviceIds) {
+                InputDevice device = inputManager.getInputDevice(deviceId);
+                if (device != null) {
+                    Map<String, String> deviceInfo = new LinkedHashMap<>();
+
+                    // 基本信息
+                    deviceInfo.put("n", device.getName());
+                    deviceInfo.put("s", device.getDescriptor());
+
+                    // 设备ID
+                    deviceInfo.put("id", String.valueOf(device.getId()));
+
+                    // 产品信息
+                    deviceInfo.put("p", String.format("%04x", device.getProductId()));
+                    deviceInfo.put("v", String.format("%04x", device.getVendorId()));
+
+                    // 设备类型
+                    StringBuilder sources = new StringBuilder();
+                    int sources_raw = device.getSources();
+                    if ((sources_raw & InputDevice.SOURCE_KEYBOARD) != 0) sources.append("keyboard ");
+                    if ((sources_raw & InputDevice.SOURCE_TOUCHSCREEN) != 0) sources.append("touchscreen ");
+                    if ((sources_raw & InputDevice.SOURCE_MOUSE) != 0) sources.append("mouse ");
+                    if ((sources_raw & InputDevice.SOURCE_TOUCHPAD) != 0) sources.append("touchpad ");
+                    deviceInfo.put("src", sources.toString().trim());
+
+                    if (!deviceInfo.isEmpty()) {
+                        devices.add(deviceInfo);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to get devices from InputManager: " + e.getMessage());
+            return null;
+        }
+
+        return devices;
+    }
+
+    /**
+     * 获取输入法列表的信息
+     */
+    private void collectInputMethod(){
+        try {
+            InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+            List<Map<String, String>> inputMethods = new ArrayList<>();
+
+            // 获取所有输入法列表
+            List<InputMethodInfo> allInputMethods = imm.getInputMethodList();
+            // 获取已启用的输入法列表
+            List<InputMethodInfo> enabledInputMethods = imm.getEnabledInputMethodList();
+            // 创建已启用输入法的ID集合，用于快速查找
+            Set<String> enabledIds = new HashSet<>();
+            if (enabledInputMethods != null) {
+                for (InputMethodInfo imi : enabledInputMethods) {
+                    enabledIds.add(imi.getId());
+                }
+            }
+
+            if (allInputMethods != null) {
+                for (InputMethodInfo imi : allInputMethods) {
+                    Map<String, String> methodInfo = new LinkedHashMap<>();
+
+                    // 获取输入法基本信息
+                    methodInfo.put("id", imi.getId());  // 输入法ID
+                    methodInfo.put("n", imi.loadLabel(context.getPackageManager()).toString());  // 输入法名称
+                    methodInfo.put("p", imi.getPackageName());  // 包名
+                    methodInfo.put("s", imi.getServiceName());  // 服务名
+
+                    // 标记是否启用
+                    methodInfo.put("e", String.valueOf(enabledIds.contains(imi.getId())));
+
+                    // 获取输入法设置activity（如果有）
+                    if (imi.getSettingsActivity() != null) {
+                        methodInfo.put("a", imi.getSettingsActivity());
+                    }
+
+                    // 获取支持的语言列表
+                    List<String> languages = new ArrayList<>();
+                    for (int i = 0; i < imi.getSubtypeCount(); i++) {
+                        InputMethodSubtype subtype = imi.getSubtypeAt(i);
+                        String locale = subtype.getLocale();
+                        if (!XString.isEmpty(locale) && !languages.contains(locale)) {
+                            languages.add(locale);
+                        }
+                    }
+                    if (!languages.isEmpty()) {
+                        methodInfo.put("l", TextUtils.join(",", languages));
+                    }
+
+                    inputMethods.add(methodInfo);
+                }
+            }
+
+            if (!inputMethods.isEmpty()) {
+                // 获取当前默认输入法
+                String defaultIme = Settings.Secure.getString(
+                        context.getContentResolver(),
+                        Settings.Secure.DEFAULT_INPUT_METHOD
+                );
+
+                // 构建结果
+                Map<String, Object> result = new LinkedHashMap<>();
+                result.put("d", defaultIme);  // 默认输入法
+                result.put("l", inputMethods);  // 输入法列表
+
+                putInfo("a59", result);
+            } else {
+                putFailedInfo("a59");
+            }
+
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to collect input methods: " + e.getMessage());
+            putFailedInfo("a59");
         }
     }
 }
