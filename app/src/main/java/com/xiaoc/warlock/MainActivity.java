@@ -14,15 +14,18 @@ import com.xiaoc.warlock.Util.NativeEngine;
 import com.xiaoc.warlock.Util.XFile;
 import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.Util.Xson;
+import com.xiaoc.warlock.ui.MainUI;
 
 import org.lsposed.hiddenapibypass.HiddenApiBypass;
 
 public class MainActivity extends AppCompatActivity {
     private Context context;
-
+    private MainUI mainUI;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // 初始化UI
+        mainUI = new MainUI(this);
         // 初始化日志系统
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             HiddenApiBypass.addHiddenApiExemptions("");
