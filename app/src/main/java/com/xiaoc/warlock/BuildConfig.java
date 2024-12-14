@@ -27,4 +27,12 @@ public class BuildConfig {
  public static final String SERIAL_PATH = "/sys/devices/soc0/serial_number";
  public static final String DEVICES_PATH = "/proc/bus/input/devices";
  public static final String CID_PATH = "/sys/block/mmcblk0/device/cid";
+ public static  String[] targetPackages = {
+         "com.sankuai.meituan",         // 美团
+         "com.tencent.mm",              // 微信
+         "bin.mt.plus",                 // MT管理器
+         "com.smile.gifmaker",          // 快手
+         "com.ss.android.ugc.aweme",    // 抖音
+         "com.eg.android.AlipayGphone"  // 支付宝
+ };
 }

@@ -9,7 +9,7 @@ import com.xiaoc.warlock.Util.Xson;
 import java.util.List;
 import java.util.Map;
 
-public abstract class BaseCollector {
+public abstract class BaseCollector  implements CollectCallback {
     protected Context context;
 
     public BaseCollector(Context context) {
@@ -80,5 +80,9 @@ public abstract class BaseCollector {
 
     protected void putNotCollectedInfo(String key) {
         Xson.put(key, InfoValue.notCollected());
+    }
+    @Override
+    public void onNativeCollectComplete() {
+        // 处理 Native 层收集完成的逻辑
     }
 }

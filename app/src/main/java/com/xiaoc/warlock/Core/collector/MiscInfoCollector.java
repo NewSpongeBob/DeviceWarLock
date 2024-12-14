@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.ConfigurationInfo;
 import android.hardware.input.InputManager;
+import android.media.AudioManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Environment;
@@ -72,6 +73,8 @@ public class MiscInfoCollector  extends BaseCollector {
         collectStorageCID();       // a57
         collectInputDevices();     // a58
         collectInputMethod();      // a59
+        collectAudioVolumes();     // a61
+
     }
     /**
      * 获取OpenGL ES版本
@@ -808,6 +811,69 @@ public class MiscInfoCollector  extends BaseCollector {
         } catch (Exception e) {
             XLog.e(TAG, "Failed to collect input methods: " + e.getMessage());
             putFailedInfo("a59");
+        }
+    }
+    /**
+     * 收集设备音频流音量信息
+     * 包含以下音频流类型的音量:
+     * - STREAM_ALARM: 闹钟音量
+     * - STREAM_MUSIC: 媒体音量
+     * - STREAM_NOTIFICATION: 通知音量
+     * - STREAM_RING: 铃声音量
+     * - STREAM_SYSTEM: 系统音量
+     * - STREAM_VOICE_CALL: 通话音量
+     * 结果格式:
+     * {
+     *   "a": 音量值,     // alarm音量
+     *   "m": 音量值,     // music音量
+     *   "n": 音量值,     // notification音量
+     *   "r": 音量值,     // ring音量
+     *   "s": 音量值,     // system音量
+     *   "v": 音量值      // voice_call音量
+     * }
+     */
+    private void collectAudioVolumes() {
+        try {
+            // 获取AudioManager实例
+            AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (audioManager == null) {
+                putFailedInfo("a61");
+                return;
+            }
+
+            // 创建音量信息Map
+            Map<String, Integer> volumeInfo = new LinkedHashMap<>();
+
+            // 获取闹钟音量
+            int alarmVolume = audioManager.getStreamVolume(AudioManager.STREAM_ALARM);
+            volumeInfo.put("a", alarmVolume);
+
+            // 获取媒体音量
+            int musicVolume = audioManager.getStreamVolume(AudioManager.STREAM_MUSIC);
+            volumeInfo.put("m", musicVolume);
+
+            // 获取通知音量
+            int notificationVolume = audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION);
+            volumeInfo.put("n", notificationVolume);
+
+            // 获取铃声音量
+            int ringVolume = audioManager.getStreamVolume(AudioManager.STREAM_RING);
+            volumeInfo.put("r", ringVolume);
+
+            // 获取系统音量
+            int systemVolume = audioManager.getStreamVolume(AudioManager.STREAM_SYSTEM);
+            volumeInfo.put("s", systemVolume);
+
+            // 获取通话音量
+            int voiceCallVolume = audioManager.getStreamVolume(AudioManager.STREAM_VOICE_CALL);
+            volumeInfo.put("v", voiceCallVolume);
+
+            // 保存收集到的音量信息
+            putInfo("a61", volumeInfo);
+
+        } catch (Exception e) {
+            XLog.e("AudioCollector", "Failed to collect audio volumes: " + e.getMessage());
+            putFailedInfo("a61");
         }
     }
 }

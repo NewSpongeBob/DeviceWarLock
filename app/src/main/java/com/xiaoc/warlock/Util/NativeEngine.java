@@ -1,5 +1,9 @@
 package com.xiaoc.warlock.Util;
 
+import com.xiaoc.warlock.Core.CollectCallback;
+
+import java.util.Map;
+
 public class NativeEngine {
 
     static {
@@ -11,6 +15,6 @@ public class NativeEngine {
     public static native String popen(String command);
 
     public native int open(String path, int flags);
-
-    // 其他本地方法声明...
+    public static native void startCollect(CollectCallback callback);
+    public static native String getCollectedInfo();
 }

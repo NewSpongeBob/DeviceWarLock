@@ -1,5 +1,7 @@
 package com.xiaoc.warlock.Core.collector;
 
+import android.accounts.Account;
+import android.accounts.AccountManager;
 import android.annotation.SuppressLint;
 import android.bluetooth.BluetoothAdapter;
 import android.content.ContentResolver;
@@ -31,8 +33,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
@@ -154,6 +158,13 @@ public class BasicInfoCollector extends BaseCollector {
         } catch (Exception e) {
             XLog.e("AAIDCollector", "Failed to get AAID: " + e.getMessage());
             putFailedInfo("a2");
+        }
+        try {
+            // 收集设备账户信息
+            collectAccounts();
+        } catch (Exception e) {
+            putFailedInfo("a60");
+            XLog.e("Failed to collect accounts: " + e.getMessage());
         }
     }
     public void getAppPath() {
@@ -533,7 +544,54 @@ public class BasicInfoCollector extends BaseCollector {
             return false;
         }
     }
+    /**
+     * 收集设备上的账户信息
+     * 通过 AccountManager 获取所有账户,包括:
+     * - Google账户
+     * - 小米账户
+     * - 其他第三方账户
+     * 结果格式:
+     * {
+     *   "t": "账户类型",  // 如 com.google, com.xiaomi
+     *   "n": "账户名称"   // 如 example@gmail.com
+     * }
+     */
+    private void collectAccounts() {
+        try {
+            // 获取AccountManager实例
+            AccountManager accountManager = AccountManager.get(context);
+            // 获取所有账户信息
+            Account[] accounts = accountManager.getAccounts();
 
+            if (accounts != null && accounts.length > 0) {
+                // 创建账户信息列表
+                List<Map<String, String>> accountList = new ArrayList<>();
+
+                // 遍历所有账户
+                for (Account account : accounts) {
+                    Map<String, String> accountInfo = new LinkedHashMap<>();
+                    // 保存账户类型(type)和名称(name)
+                    accountInfo.put("t", account.type);      // t = type(类型)
+                    accountInfo.put("n", account.name);      // n = name(名称)
+                    accountList.add(accountInfo);
+                }
+
+                // 保存收集到的账户信息
+                putInfo("a60", accountList);
+            } else {
+                // 没有找到任何账户,标记为失败
+                putFailedInfo("a60");
+            }
+        } catch (SecurityException e) {
+            // 处理权限不足的情况
+            XLog.e("AccountCollector", "Permission denied: " + e.getMessage());
+            putFailedInfo("a60");
+        } catch (Exception e) {
+            // 处理其他异常情况
+            XLog.e("AccountCollector", "Failed to collect accounts: " + e.getMessage());
+            putFailedInfo("a60");
+        }
+    }
     /**
      * 通过多种方法尝试获取 GSF ID
      */

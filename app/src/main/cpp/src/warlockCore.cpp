@@ -1,9 +1,5 @@
 #include "../inc/warlockCore.h"
-#include <jni.h>
-#include <string>
-#include <cstring>
-#include <stdio.h>
-#include <fcntl.h>
+
 
 extern "C" {
 
@@ -37,5 +33,14 @@ Java_com_xiaoc_warlock_Util_NativeEngine_open(JNIEnv *env, jobject /* obj */, js
     env->ReleaseStringUTFChars(path, filePath);
     return fd;
 }
+JNIEXPORT void JNICALL
+Java_com_xiaoc_warlock_Util_NativeEngine_startCollect(JNIEnv *env, jclass /* clazz */, jobject callback) {
+    NativeCollector::getInstance()->startCollect(env, callback);
+}
 
+JNIEXPORT jstring JNICALL
+Java_com_xiaoc_warlock_Util_NativeEngine_getCollectedInfo(JNIEnv *env, jclass /* clazz */) {
+    std::string jsonStr = NativeCollector::getInstance()->getCollectedInfo();
+    return env->NewStringUTF(jsonStr.c_str());
+}
 } // extern "C"
