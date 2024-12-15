@@ -7,7 +7,8 @@
 #include "rapidjson/document.h"
 #include "rapidjson/writer.h"
 #include "rapidjson/stringbuffer.h"
-#include "rapidjson/prettywriter.h"  // 添加这个头文件
+#include "rapidjson/document.h"
+#include "rapidjson/prettywriter.h"
 class XsonCollector {
 public:
     static XsonCollector* getInstance();

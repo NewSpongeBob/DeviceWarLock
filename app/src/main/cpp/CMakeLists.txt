@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.22.1)
 project("warlockCore")
+#添加内联支持
+enable_language(C ASM)
 
 # 设置 RapidJSON 选项，禁用构建示例和测试
 set(RAPIDJSON_BUILD_TESTS OFF CACHE BOOL "Build rapidjson tests" FORCE)
@@ -14,9 +16,22 @@ FetchContent_Declare(
         GIT_TAG master
 )
 FetchContent_MakeAvailable(rapidjson)
+if (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "arm64-v8a")
+    set(syscall src/netlink/syscall64.s)
+elseif (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "armeabi-v7a")
+    set(syscall src/netlink/syscall32.s)
+endif ()
+# 添加头文件目录
 
+include_directories(
+        inc/
+        inc/collector/
+        inc/utils/
+        inc/netlink/
+)
 # 设置源文件
 set(SOURCE_FILES
+
         src/warlockCore.cpp
         src/collector/NativeCollector.cpp
         src/collector/SystemInfoCollector.cpp
@@ -28,13 +43,16 @@ set(SOURCE_FILES
         src/utils/SyscallUtils.cpp
         src/utils/Base64Utils.cpp
         src/utils/XsonCollector.cpp
+        src/netlink/ifaddrs.cpp
+
+        src/netlink/NetlinkConnection.cpp
+        ${syscall}
 )
 
 # 添加库
 add_library(warlockCore SHARED ${SOURCE_FILES})
 
-# 添加头文件目录
-include_directories(inc/)
+
 
 # 查找需要的库
 find_library(log-lib log)

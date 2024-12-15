@@ -2,12 +2,7 @@
 #ifndef WARLOCK_NATIVECOLLECTOR_H
 #define WARLOCK_NATIVECOLLECTOR_H
 
-#include <jni.h>
-#include <string>
-#include <pthread.h>
-#include <map>
-#include <vector>
-#include <memory>
+#include "../utils/allheader.h"
 #include "ICollector.h"
 #include "utils/XsonCollector.h"
 class NativeCollector {

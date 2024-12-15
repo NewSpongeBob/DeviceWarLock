@@ -2,8 +2,7 @@
 #ifndef WARLOCK_ICOLLECTOR_H
 #define WARLOCK_ICOLLECTOR_H
 
-#include <map>
-#include <string>
+#include "../utils/allheader.h"
 
 class ICollector {
 public:
