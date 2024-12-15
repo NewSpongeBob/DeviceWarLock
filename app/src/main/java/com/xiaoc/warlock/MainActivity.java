@@ -3,15 +3,12 @@ package com.xiaoc.warlock;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.xiaoc.warlock.Core.CollectCallback;
 import com.xiaoc.warlock.Core.Warlock;
-import com.xiaoc.warlock.Util.InfoValue;
+
 import com.xiaoc.warlock.Util.NativeEngine;
 import com.xiaoc.warlock.Util.XFile;
 import com.xiaoc.warlock.Util.XLog;
@@ -41,9 +38,7 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
         context = this;
         mainUI = new MainUI(this);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            HiddenApiBypass.addHiddenApiExemptions("");
-        }
+
         XLog.init(this, XLog.DEBUG, true);
     }
 

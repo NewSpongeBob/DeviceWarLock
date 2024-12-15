@@ -23,6 +23,7 @@
     <!-- 用于获取音频设置的权限 -->
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
     <application
+        android:name=".App"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -42,6 +43,10 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <provider
+            android:name=".Provider.AppProvider"
+            android:authorities="${applicationId}.initprovider"
+            android:exported="false" />
     </application>
 
 </manifest>

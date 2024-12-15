@@ -22,8 +22,10 @@ import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
+import com.xiaoc.warlock.App;
 import com.xiaoc.warlock.BuildConfig;
 import com.xiaoc.warlock.Core.BaseCollector;
+import com.xiaoc.warlock.Util.AppChecker;
 import com.xiaoc.warlock.Util.XFile;
 import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.Util.XString;
@@ -467,17 +469,9 @@ public class MiscInfoCollector  extends BaseCollector {
      */
     private void collectReflectionAvailable(){
         try {
-            boolean reflectionAvailable = false;
 
-            // 检查反射是否可用
-            try {
-                Class<?> statClass = Class.forName("android.system.StructStat");
-                reflectionAvailable = true;
-            } catch (Exception e) {
-                reflectionAvailable = false;
-            }
+            putInfo("a44", AppChecker.isReflectionSupported());
 
-            putInfo("a44", reflectionAvailable);
 
         } catch (Exception e) {
             XLog.e(TAG, "Failed to check reflection availability: " + e.getMessage());

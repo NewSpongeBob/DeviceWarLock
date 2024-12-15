@@ -20,6 +20,10 @@ if (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "arm64-v8a")
     set(syscall src/netlink/syscall64.s)
 elseif (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "armeabi-v7a")
     set(syscall src/netlink/syscall32.s)
+elseif (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "x86_64")
+    set(syscall src/netlink/syscall_x86_64.s)
+elseif (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "x86")
+    set(syscall src/netlink/syscall_x86.s)
 endif ()
 # 添加头文件目录
 

@@ -264,7 +264,7 @@ public class BasicInfoCollector extends BaseCollector {
         if (result.isSuccess()) {
             Map<String, String> propMap = new LinkedHashMap<>();
             String content = result.getSuccessMsg();
-            XLog.d(content);
+           // XLog.d(content);
 
             // 按行分割输出
             String[] lines = content.split("\n");

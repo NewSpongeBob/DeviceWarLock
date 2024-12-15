@@ -1,5 +1,6 @@
 package com.xiaoc.warlock.ui.fragment;
 
+import android.os.Build;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -10,6 +11,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.xiaoc.warlock.Core.EnvironmentDetector;
 import com.xiaoc.warlock.R;
 import com.xiaoc.warlock.ui.adapter.InfoAdapter;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
@@ -19,8 +21,8 @@ import java.util.List;
 
 public class FingerprintFragment extends Fragment {
     private RecyclerView recyclerView;
-
     private InfoAdapter adapter;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -31,30 +33,29 @@ public class FingerprintFragment extends Fragment {
         initRecyclerView();
         return view;
     }
+
     private void initRecyclerView() {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new InfoAdapter();
         recyclerView.setAdapter(adapter);
+
+        // 显示设备指纹信息
         List<InfoItem> items = new ArrayList<>();
-        items.add(new InfoItem("Root状态", checkRoot()));
-        items.add(new InfoItem("模拟器检测", checkEmulator()));
-        items.add(new InfoItem("调试状态", checkDebug()));
-        // ... 添加更多环境检测信息
+
+        // 基本信息
+        InfoItem basicInfo = new InfoItem("基本信息", "设备基本信息");
+        basicInfo.addDetail("设备型号", Build.MODEL);
+        basicInfo.addDetail("Android版本", Build.VERSION.RELEASE);
+        basicInfo.addDetail("系统版本", Build.DISPLAY);
+        items.add(basicInfo);
+
+        // 硬件信息
+        InfoItem hardwareInfo = new InfoItem("硬件信息", "设备硬件信息");
+        hardwareInfo.addDetail("CPU架构", Build.SUPPORTED_ABIS[0]);
+        hardwareInfo.addDetail("制造商", Build.MANUFACTURER);
+        hardwareInfo.addDetail("品牌", Build.BRAND);
+        items.add(hardwareInfo);
+
         adapter.setItems(items);
-    }
-
-    private String checkRoot() {
-        // 实现Root检测逻辑
-        return "未检测到Root";
-    }
-
-    private String checkEmulator() {
-        // 实现模拟器检测逻辑
-        return "真实设备";
-    }
-
-    private String checkDebug() {
-        // 实现调试检测逻辑
-        return "未开启调试";
     }
 }
