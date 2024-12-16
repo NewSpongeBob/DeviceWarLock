@@ -31,35 +31,38 @@ public class VirtualDetector extends BaseDetector {
     private void checkEmulator() {
        try {
            List<String> abnormalDetails = new ArrayList<>();
+          // 检查CPU架构
+          String arch = System.getProperty("os.arch");
+          if (arch != null && (arch.contains("x86_64") || arch.contains("x86"))) {
+              InfoItem warning = new WarningBuilder("checkEmulator", null)
+                      .addDetail("check", arch)
+                      .addDetail("level", "high")
+                      .build();
+              reportAbnormal(warning);
+          }
 
-           // 检查特征文件
-           for (String path : BuildConfig.EMULATOR_FILES) {
-               File file = new File(path);
-               if (file.exists()) {
-                   abnormalDetails.add( path);
-               }
-           }
+          // 检查特征文件
+          for (String path : BuildConfig.EMULATOR_FILES) {
+              File file = new File(path);
+              if (file.exists()) {
+                  abnormalDetails.add(path);
+              }
+          }
 
-           // 检查CPU架构
-           String arch = System.getProperty("os.arch");
-           if (arch != null && arch.contains("x86_64")) {
-               abnormalDetails.add( arch);
-           }
+          // 当特征文件数量大于3个时创建警告
+          if (abnormalDetails.size() > 3) {
+              StringBuilder details = new StringBuilder();
+              for (String detail : abnormalDetails) {
+                  details.append(detail).append("\n");
+              }
 
-           // 如果发现异常，创建警告
-           if (!abnormalDetails.isEmpty()) {
-               StringBuilder details = new StringBuilder();
-               for (String detail : abnormalDetails) {
-                   details.append(detail).append("\n");
-               }
+              InfoItem warning = new WarningBuilder("checkEmulator", null)
+                      .addDetail("check", details.toString().trim())
+                      .addDetail("level", "high")
+                      .build();
 
-               InfoItem warning = new WarningBuilder("checkEmulator", null)
-                       .addDetail("check", details.toString().trim())
-                       .addDetail("level", "high")
-                       .build();
-
-               reportAbnormal(warning);
-           }
+              reportAbnormal(warning);
+          }
        }catch (Exception e){{
 
        }}

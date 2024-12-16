@@ -11,8 +11,8 @@ public class AppChecker {
     private static boolean isStackTraceBbnormal = false;
     public static void checkReflectionSupport() {
         try {
-            Class<?> activityThreadClass = Class.forName("android.app.ActivityThread");
-            activityThreadClass.getDeclaredMethod("currentActivityThread");
+            Class<?> cls = Class.forName("android.os.SystemProperties");
+            cls.getMethod("get", String.class).invoke(null, "ro.boot.verifiedbootstate");
             isReflectionSupported = true;
         } catch (Exception e) {
             isReflectionSupported = false;

@@ -57,16 +57,20 @@ namespace utils {
     long SyscallUtils::syscall_x86(long number, long arg1, long arg2, long arg3) {
         long result;
         __asm__ volatile(
-            "mov %1, %%eax\n"    // 系统调用号
-            "mov %2, %%ebx\n"    // 第一个参数
-            "mov %3, %%ecx\n"    // 第二个参数
-            "mov %4, %%edx\n"    // 第三个参数
-            "int $0x80\n"        // 触发系统调用
-            "mov %%eax, %0"      // 获取返回值
-            : "=r"(result)
-            : "r"(number), "r"(arg1), "r"(arg2), "r"(arg3)
-            : "eax", "ebx", "ecx", "edx"
-        );
+                "pushl %%ebx\n"      // 保存ebx的值，因为它是PIC寄存器
+                "movl %2, %%ebx\n"   // 加载第一个参数到ebx
+                "movl %1, %%eax\n"   // 系统调用号到eax
+                "movl %3, %%ecx\n"   // 第二个参数到ecx
+                "movl %4, %%edx\n"   // 第三个参数到edx
+                "int $0x80\n"        // 触发系统调用
+                "popl %%ebx\n"       // 恢复ebx的值
+                : "=a"(result)       // 输出：eax到result
+                : "g"(number),       // 输入：系统调用号
+        "r"(arg1),         // 输入：第一个参数
+        "r"(arg2),         // 输入：第二个参数
+        "r"(arg3)          // 输入：第三个参数
+                : "ecx", "edx"       // 告诉编译器这些寄存器会被修改
+                );
         return result;
     }
     #endif

@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import com.xiaoc.warlock.BuildConfig;
 import com.xiaoc.warlock.Core.BaseDetector;
 import com.xiaoc.warlock.Util.XCommandUtil;
+import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
 import com.xiaoc.warlock.Util.WarningBuilder;
 
@@ -18,16 +19,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class RootDetector extends BaseDetector {
+    private Method getPropMethod;
+    private String TAG = "RootDetector";
     public RootDetector(Context context, EnvironmentCallback callback) {
         super(context, callback);
-    }
+        initSystemProperties();
 
+    }
+    private void initSystemProperties() {
+        try {
+            Class<?> cls = Class.forName("android.os.SystemProperties");
+            getPropMethod = cls.getMethod("get", String.class);
+        } catch (Exception e) {
+            XLog.e("BootloaderDetector", "反射获取SystemProperties失败", e);
+            getPropMethod = null;
+        }
+    }
     @Override
     public void detect() {
         checkRootPackages();
         checkRootPath();
         checkRootFiles();
         checkSeLinux();
+        checkUnLock();
     }
 
     /**
@@ -184,5 +198,68 @@ public class RootDetector extends BaseDetector {
 
         }
         }
+
+    /**
+     * 使用反射的方法获取系统属性
+     * @param prop
+     * @return
+     */
+    private String getProperty(String prop) {
+        // 先尝试使用反射方式
+        if (getPropMethod != null) {
+            try {
+                Object value = getPropMethod.invoke(null, prop);
+                if (value != null) {
+                    return value.toString();
+                }
+            } catch (Exception e) {
+                XLog.e(TAG, "反射获取属性失败: " + prop, e);
+            }
+        }
+
+        // 反射失败则使用命令行方式
+        XCommandUtil.CommandResult result = XCommandUtil.execute("getprop " + prop);
+        if (result.isSuccess()) {
+            return result.getSuccessMsg().trim();
+        }
+        return "";
+    }
+
+    /**
+     * 检测设备是否解锁
+     */
+    private void checkUnLock() {
+        try {
+            List<String> abnormalProps = new ArrayList<>();
+
+            for (String prop : BuildConfig.BOOTLOADER_PROPS) {
+                String value = getProperty(prop).toLowerCase();
+                if (value.contains("orange") || value.contains("unlocked")) {
+                    abnormalProps.add(prop + ": " + value);
+                }
+            }
+            String oemUnlockAllowed = getProperty("sys.oem_unlock_allowed");
+            if ("1".equals(oemUnlockAllowed)) {
+                abnormalProps.add("sys.oem_unlock_allowed: "+ oemUnlockAllowed);
+            }
+
+            if (!abnormalProps.isEmpty()) {
+                StringBuilder details = new StringBuilder();
+                for (String prop : abnormalProps) {
+                    details.append(prop).append("\n");
+                }
+
+                InfoItem warning = new WarningBuilder("checkUnLock", null)
+                        .addDetail("check", details.toString().trim())
+                        .addDetail("level", "medium")
+                        .build();
+
+                reportAbnormal(warning);
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "checkUnLock失败", e);
+        }
+    }
+
 
 }

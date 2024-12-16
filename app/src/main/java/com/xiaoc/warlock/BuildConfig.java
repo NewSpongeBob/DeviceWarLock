@@ -38,7 +38,10 @@ public class BuildConfig {
  };
  public static final String APATCH_STRING = "Apatch";
  public static final String KSU_STRING = "KSU";
-
+ public static final String[] SHIZUKU_FILES = {
+         "/data/local/tmp/shizuku",
+         "/data/local/tmp/shizuku_starter"
+ };
  /**
   * 模拟器共享文件夹路径列表
   */
@@ -56,6 +59,15 @@ public class BuildConfig {
          "/ld.conf",                    // LD模拟器
          "vboxsf"                      //virtualbox
  };
+ public static final String[] BOOTLOADER_PROPS = {
+         "ro.boot.verifiedbootstate",
+         "ro.secureboot.lockstate",
+         "vendor.boot.vbmeta.device_state",
+         "vendor.boot.verifiedbootstate",
+         "ro.boot.vbmeta.device_state",
+         "ro.boot.flash.locked"
+ };
+
  public static final String[] ROOT_PACKAGES = {
          "com.topjohnwu.magisk",
          "eu.chainfire.supersu",

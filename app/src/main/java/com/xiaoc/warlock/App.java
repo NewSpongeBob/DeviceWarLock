@@ -15,6 +15,7 @@ public class App extends Application {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 Reflection.unseal(this);
+
             }
         } catch (Exception e) {
             e.printStackTrace();
