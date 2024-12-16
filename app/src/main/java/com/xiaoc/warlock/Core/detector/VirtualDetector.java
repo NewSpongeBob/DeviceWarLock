@@ -8,6 +8,8 @@ import com.xiaoc.warlock.BuildConfig;
 import com.xiaoc.warlock.Core.BaseDetector;
 import com.xiaoc.warlock.Util.WarningBuilder;
 import com.xiaoc.warlock.Util.XCommandUtil;
+import com.xiaoc.warlock.Util.XFile;
+import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
 
 import java.io.File;
@@ -15,6 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class VirtualDetector extends BaseDetector {
+    private String TAG = "VirtualDetector";
     public VirtualDetector(Context context, EnvironmentCallback callback) {
         super(context, callback);
     }
@@ -29,43 +32,45 @@ public class VirtualDetector extends BaseDetector {
      * 检查模拟器特征
      */
     private void checkEmulator() {
-       try {
-           List<String> abnormalDetails = new ArrayList<>();
-          // 检查CPU架构
-          String arch = System.getProperty("os.arch");
-          if (arch != null && (arch.contains("x86_64") || arch.contains("x86"))) {
-              InfoItem warning = new WarningBuilder("checkEmulator", null)
-                      .addDetail("check", arch)
-                      .addDetail("level", "high")
-                      .build();
-              reportAbnormal(warning);
-          }
+        try {
+            List<String> abnormalDetails = new ArrayList<>();
 
-          // 检查特征文件
-          for (String path : BuildConfig.EMULATOR_FILES) {
-              File file = new File(path);
-              if (file.exists()) {
-                  abnormalDetails.add(path);
-              }
-          }
+            // 检查CPU架构
+            String arch = System.getProperty("os.arch");
+            if (arch != null && (arch.contains("x86_64") || arch.contains("x86"))) {
+                abnormalDetails.add(arch);
+            }
 
-          // 当特征文件数量大于3个时创建警告
-          if (abnormalDetails.size() > 3) {
-              StringBuilder details = new StringBuilder();
-              for (String detail : abnormalDetails) {
-                  details.append(detail).append("\n");
-              }
+            // 检查特征文件
+            List<String> foundFiles = new ArrayList<>();
+            for (String path : BuildConfig.EMULATOR_FILES) {
+                if (XFile.exists(path)) {
+                    foundFiles.add(path);
+                }
+            }
 
-              InfoItem warning = new WarningBuilder("checkEmulator", null)
-                      .addDetail("check", details.toString().trim())
-                      .addDetail("level", "high")
-                      .build();
+            // 如果特征文件数量大于2个，添加到异常列表
+            if (foundFiles.size() > 2) {
+                abnormalDetails.addAll(foundFiles);
+            }
 
-              reportAbnormal(warning);
-          }
-       }catch (Exception e){{
+            if (!abnormalDetails.isEmpty()) {
+                StringBuilder details = new StringBuilder();
+                for (String detail : abnormalDetails) {
+                    details.append(detail).append("\n");
+                }
 
-       }}
+                InfoItem warning = new WarningBuilder("checkEmulator", null)
+                        .addDetail("check", details.toString().trim())
+                        .addDetail("level", "high")
+                        .build();
+
+                reportAbnormal(warning);
+                XLog.d(TAG, "检测到模拟器特征: " + details);
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "检查模拟器状态失败", e);
+        }
     }
     /**
      * 检查模拟器挂载点
