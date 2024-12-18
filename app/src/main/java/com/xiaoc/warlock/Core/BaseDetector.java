@@ -23,4 +23,10 @@ public abstract class BaseDetector {
             callback.onAbnormalDetected(item);
         }
     }
+    // 添加 release 方法
+    public void release() {
+        // 基类的清理工作
+        context = null;
+        callback = null;
+    }
 }

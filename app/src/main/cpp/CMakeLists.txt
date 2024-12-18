@@ -3,12 +3,11 @@ project("warlockCore")
 #添加内联支持
 enable_language(C ASM)
 
-# 设置 RapidJSON 选项，禁用构建示例和测试
+# RapidJSON 相关配置
 set(RAPIDJSON_BUILD_TESTS OFF CACHE BOOL "Build rapidjson tests" FORCE)
 set(RAPIDJSON_BUILD_EXAMPLES OFF CACHE BOOL "Build rapidjson examples" FORCE)
 set(RAPIDJSON_BUILD_DOC OFF CACHE BOOL "Build rapidjson documentation" FORCE)
 
-# 下载 RapidJSON
 include(FetchContent)
 FetchContent_Declare(
         rapidjson
@@ -16,6 +15,8 @@ FetchContent_Declare(
         GIT_TAG master
 )
 FetchContent_MakeAvailable(rapidjson)
+
+# 架构相关配置
 if (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "arm64-v8a")
     set(syscall src/netlink/syscall64.s)
 elseif (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "armeabi-v7a")
@@ -25,17 +26,17 @@ elseif (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "x86_64")
 elseif (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "x86")
     set(syscall src/netlink/syscall_x86.s)
 endif ()
-# 添加头文件目录
 
+# 头文件目录
 include_directories(
         inc/
         inc/collector/
         inc/utils/
         inc/netlink/
 )
-# 设置源文件
-set(SOURCE_FILES
 
+# 主库源文件
+set(SOURCE_FILES
         src/warlockCore.cpp
         src/collector/NativeCollector.cpp
         src/collector/SystemInfoCollector.cpp
@@ -48,25 +49,32 @@ set(SOURCE_FILES
         src/utils/Base64Utils.cpp
         src/utils/XsonCollector.cpp
         src/netlink/ifaddrs.cpp
-
         src/netlink/NetlinkConnection.cpp
         ${syscall}
 )
 
-# 添加库
+# 隔离进程库源文件
+set(ISOLATED_SOURCE_FILES
+        src/detector/SandboxDetector.cpp
+        src/warlockServer.cpp
+)
+
+# 添加两个库
 add_library(warlockCore SHARED ${SOURCE_FILES})
+add_library(warlockServer SHARED ${ISOLATED_SOURCE_FILES})
 
-
-
-# 查找需要的库
+# 查找系统库
 find_library(log-lib log)
 find_library(mediandk-lib mediandk)
 
-# 添加 RapidJSON 头文件路径
+# 配置主库
 target_include_directories(warlockCore PRIVATE ${rapidjson_SOURCE_DIR}/include)
-
-# 链接库
 target_link_libraries(warlockCore
         ${log-lib}
         ${mediandk-lib}
+)
+
+# 配置隔离进程库
+target_link_libraries(warlockServer
+        ${log-lib}
 )

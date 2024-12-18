@@ -13,13 +13,16 @@
 extern "C" {
 #endif
 
-// ... 其他已有的声明 ...
-
+JNIEXPORT jstring JNICALL
+Java_com_xiaoc_warlock_Util_NativeEngine_popen(JNIEnv *env, jobject /* obj */, jstring command);
+JNIEXPORT jint JNICALL
+Java_com_xiaoc_warlock_Util_NativeEngine_open(JNIEnv *env, jobject /* obj */, jstring path, jint flags);
 JNIEXPORT void JNICALL
 Java_com_xiaoc_warlock_Util_NativeEngine_startCollect(JNIEnv *env, jclass clazz, jobject callback);
 
 JNIEXPORT jstring JNICALL
 Java_com_xiaoc_warlock_Util_NativeEngine_getCollectedInfo(JNIEnv *env, jclass clazz);
+
 
 #ifdef __cplusplus
 }

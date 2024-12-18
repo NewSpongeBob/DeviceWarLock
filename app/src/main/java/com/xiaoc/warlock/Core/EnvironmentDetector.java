@@ -6,7 +6,9 @@ import android.os.Looper;
 
 import com.xiaoc.warlock.Core.detector.MiscDetector;
 import com.xiaoc.warlock.Core.detector.RootDetector;
+import com.xiaoc.warlock.Core.detector.SandboxDetector;
 import com.xiaoc.warlock.Core.detector.VirtualDetector;
+import com.xiaoc.warlock.Core.detector.XposedDetector;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
 
 import java.util.ArrayList;
@@ -40,7 +42,9 @@ public class EnvironmentDetector  implements BaseDetector.EnvironmentCallback{
         return Arrays.asList(
                 new RootDetector(context, this),
                 new VirtualDetector(context,this),
-                new MiscDetector(context,this)
+                new MiscDetector(context,this),
+                new XposedDetector(context,this),
+                new SandboxDetector(context,this)
 
                 // 添加更多检测器...
         );

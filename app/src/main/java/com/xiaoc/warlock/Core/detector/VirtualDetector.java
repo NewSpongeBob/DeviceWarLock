@@ -3,6 +3,7 @@ package com.xiaoc.warlock.Core.detector;
 import android.content.Context;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
+import android.hardware.camera2.CameraManager;
 
 import com.xiaoc.warlock.BuildConfig;
 import com.xiaoc.warlock.Core.BaseDetector;
@@ -13,6 +14,7 @@ import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -27,6 +29,39 @@ public class VirtualDetector extends BaseDetector {
         checkEmulator();
         checkEmulatorMounts();
         checkSensorSize();
+        checkEmulatorProps();
+    }
+    private String getSystemProperty(String prop) {
+        try {
+            Class<?> cls = Class.forName("android.os.SystemProperties");
+            Method method = cls.getMethod("get", String.class);
+            return (String) method.invoke(null, prop);
+        } catch (Exception e) {
+            return "";
+        }
+    }
+
+    /**
+     * 检测设备的摄像头个数
+     */
+    private void checkCameraSize() {
+        try {
+            CameraManager manager = (CameraManager) context.getSystemService(Context.CAMERA_SERVICE);
+            if (manager == null) return;
+
+            String[] cameraIds = manager.getCameraIdList();
+
+
+            if (cameraIds.length < BuildConfig.CAMERA_MINIMUM_QUANTITY_LIMIT) {
+                InfoItem warning = new WarningBuilder("checkCameraSize", null)
+                        .addDetail("cameraSize", String.valueOf(cameraIds.length))
+                        .addDetail("level", "medium")
+                        .build();
+
+                reportAbnormal(warning);
+            }
+        } catch (Exception e) {
+        }
     }
     /**
      * 检查模拟器特征
@@ -139,6 +174,38 @@ public class VirtualDetector extends BaseDetector {
             }
         }catch (Exception e){
 
+        }
+    }
+
+    /**
+     * 检测设备上的prop是否有模拟器的属性
+     */
+    private void checkEmulatorProps() {
+        try {
+
+
+            List<String> foundProps = new ArrayList<>();
+            for (String prop : BuildConfig.QEMU_PROPS) {
+                String value = getSystemProperty(prop);
+                if (value != null && !value.isEmpty()) {
+                    foundProps.add(prop + "=" + value);
+                }
+            }
+
+            if (!foundProps.isEmpty()) {
+                StringBuilder details = new StringBuilder();
+                for (String prop : foundProps) {
+                    details.append(prop).append("\n");
+                }
+
+                InfoItem warning = new WarningBuilder("checkEmulatorProps", null)
+                        .addDetail("check", details.toString().trim())
+                        .addDetail("level", "high")
+                        .build();
+
+                reportAbnormal(warning);
+            }
+        } catch (Exception e) {
         }
     }
 }

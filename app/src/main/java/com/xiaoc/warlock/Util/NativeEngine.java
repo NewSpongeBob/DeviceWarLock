@@ -6,10 +6,10 @@ import java.util.Map;
 
 public class NativeEngine {
 
-    static {
-        // 加载本地库
-        System.loadLibrary("warlockCore");
-    }
+//    static {
+//        // 加载本地库
+//        System.loadLibrary("warlockCore");
+//    }
 
     // 声明本地方法
     public static native String popen(String command);

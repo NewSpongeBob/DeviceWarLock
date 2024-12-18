@@ -1,6 +1,8 @@
 package com.xiaoc.warlock;
 
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class BuildConfig {
@@ -23,6 +25,7 @@ public class BuildConfig {
   put("/sdcard/", "SD");
   put("/storage/emulated/0", "SD0");
  }};
+ public static final int CAMERA_MINIMUM_QUANTITY_LIMIT = 2;
  public static final String STORAGE_SERIAL_PATH = "/sys/block/mmcblk0/device/serial";
  public static final String SERIAL_PATH = "/sys/devices/soc0/serial_number";
  public static final String DEVICES_PATH = "/proc/bus/input/devices";
@@ -57,8 +60,12 @@ public class BuildConfig {
          "/bst.conf",                  // BlueStacks配置
          "/mnt/shared/Applications",   // 共享应用目录
          "/ld.conf",                    // LD模拟器
-         "vboxsf"                      //virtualbox
+         "vboxsf",                      //virtualbox
+         "docker"
  };
+ /**
+  * 检测这些属性的值是否异常。这是用于检测是否设备unlock
+  */
  public static final String[] BOOTLOADER_PROPS = {
          "ro.boot.verifiedbootstate",
          "ro.secureboot.lockstate",
@@ -67,7 +74,80 @@ public class BuildConfig {
          "ro.boot.vbmeta.device_state",
          "ro.boot.flash.locked"
  };
+ /**
+  * 模拟器的prop特征
+  */
+ public static final String[] QEMU_PROPS = {
+         "ro.kernel.qemu.avd_name",
+         "ro.kernel.qemu.gles",
+         "ro.kernel.qemu.gltransport",
+         "ro.kernel.qemu.opengles.version",
+         "ro.kernel.qemu.uirenderer",
+         "ro.kernel.qemu.vsync",
+         "ro.qemu.initrc",
+         "init.svc.qemu-props",
+         "qemu.adb.secure",
+         "qemu.cmdline",
+         "qemu.hw.mainkeys",
+         "qemu.logcat",
+         "ro.adb.qemud",
+         "qemu.sf.fake_camera",
+         "qemu.sf.lcd_density",
+         "qemu.timezone",
+         "init.svc.goldfish-logcat",
+         "ro.boottime.goldfish-logcat",
+         "ro.hardware.audio.primary",
+         "init.svc.ranchu-net",
+         "init.svc.ranchu-setup",
+         "ro.boottime.ranchu-net",
+         "ro.boottime.ranchu-setup",
+         "init.svc.droid4x",
+         "init.svc.noxd",
+         "init.svc.qemud",
+         "init.svc.goldfish-setup",
+         "init.svc.goldfish-logcat",
+         "init.svc.ttVM_x86-setup",
+         "vmos.browser.home",
+         "vmos.camera.enable",
+         "ro.trd_yehuo_searchbox",
+         "init.svc.microvirtd",
+         "init.svc.vbox86-setup",
+         "ro.ndk_translation.version",
+         "redroid.width",
+         "redroid.height",
+         "redroid.fps",
+         "ro.rf.vmname"
+ };
 
+ /**
+  * 检测是否存在Xposed文件的特征
+  */
+ public static List<String> XPOSED_PATHS = Arrays.asList(
+         "/sbin/.magisk/modules/riru_lsposed",
+         "/data/adb/lspd",
+         "/sbin/.magisk/modules/zygisk_lsposed",
+         "/sbin/.magisk/modules/riru_edxposed",
+         "/data/misc/riru/modules/edxp",
+         "/data/adb/riru/modules/edxp.prop",
+         "/sbin/.magisk/modules/taichi",
+         "/data/misc/taichi",
+         "/sbin/.magisk/modules/dreamland",
+         "/data/misc/riru/modules/dreamland",
+         "/data/adb/riru/modules/dreamland",
+         "/system/bin/app_process.orig",
+         "/system/xposed.prop",
+         "/system/framework/XposedBridge.jar",
+         "/system/lib/libxposed_art.so",
+         "/system/lib/libxposed_art.so.no_orig",
+         "/system/lib64/libxposed_art.so",
+         "/system/lib64/libxposed_art.so.no_orig",
+         "/system/bin/app_process_zposed",
+         "/system/framework/ZposedBridge.jar",
+         "/system/lib/libzposed_art.so"
+ );
+ /**
+  * Root设备上常见的Apk
+  */
  public static final String[] ROOT_PACKAGES = {
          "com.topjohnwu.magisk",
          "eu.chainfire.supersu",

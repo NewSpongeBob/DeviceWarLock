@@ -43,4 +43,6 @@ Java_com_xiaoc_warlock_Util_NativeEngine_getCollectedInfo(JNIEnv *env, jclass /*
     std::string jsonStr = NativeCollector::getInstance()->getCollectedInfo();
     return env->NewStringUTF(jsonStr.c_str());
 }
-} // extern "C"
+
+
+}

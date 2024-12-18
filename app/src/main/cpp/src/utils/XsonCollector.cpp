@@ -36,7 +36,6 @@ void XsonCollector::put(const std::string& key, const std::string& value) {
                 allocator
         );
     } catch (const std::exception& e) {
-        LOGE("XsonCollector", "Failed to put %s: %s", key.c_str(), e.what());
         putFailed(key);
     }
 }
@@ -76,7 +75,6 @@ std::string XsonCollector::toString() {
         doc.Accept(writer);
         return buffer.GetString();
     } catch (const std::exception& e) {
-        LOGE("XsonCollector", "Failed to serialize JSON: %s", e.what());
         return "{}";
     }
 }

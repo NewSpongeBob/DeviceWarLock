@@ -47,6 +47,12 @@
             android:name=".Provider.AppProvider"
             android:authorities="${applicationId}.initprovider"
             android:exported="false" />
+
+
+        <service
+            android:name=".service.WarLockServer"
+            android:isolatedProcess="true"
+            android:useAppZygote="true" />
     </application>
 
 </manifest>

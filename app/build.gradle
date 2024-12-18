@@ -17,10 +17,15 @@ android {
         externalNativeBuild {
             cmake {
                 cppFlags ''
+                targets "warlockCore", "warlockServer"  // 指定要构建的目标
+                arguments "-DANDROID_STL=c++_shared"      // 使用共享 STL
             }
         }
     }
-
+    buildFeatures {
+// 启用AIDL构建特性
+        aidl true
+    }
     buildTypes {
         release {
             minifyEnabled false
