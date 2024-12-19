@@ -4,18 +4,16 @@ import android.app.Service;
 import android.content.Intent;
 import android.os.IBinder;
 import android.os.RemoteCallbackList;
-import android.util.Log;
 
 import com.xiaoc.warlock.IServerCallback;
-import com.xiaoc.warlock.Util.WarningBuilder;
 import com.xiaoc.warlock.Util.XLog;
-import com.xiaoc.warlock.ui.adapter.InfoItem;
+
 
 public class WarLockServer extends Service {
     private static final String TAG = "WarLockServer";
 
     static {
-            System.loadLibrary("warlockServer");
+        System.loadLibrary("warlockServer");
     }
 
     private final RemoteCallbackList<IServerCallback> callbacks = new RemoteCallbackList<>();
@@ -65,10 +63,10 @@ public class WarLockServer extends Service {
     }
 
 
-    @Override
     public void onCreate() {
         super.onCreate();
-        XLog.d(TAG, "Service onCreate called");
+
+
         nativeCheckSandbox();
     }
 

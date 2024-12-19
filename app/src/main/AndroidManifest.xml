@@ -49,10 +49,11 @@
             android:exported="false" />
 
 
-        <service
-            android:name=".service.WarLockServer"
-            android:isolatedProcess="true"
-            android:useAppZygote="true" />
+<!--        <service-->
+<!--            android:name=".service.WarLockServer"-->
+<!--            android:isolatedProcess="true"-->
+<!--            android:useAppZygote="true"-->
+<!--            android:process=":isolated_warlock"/>-->
     </application>
 
 </manifest>

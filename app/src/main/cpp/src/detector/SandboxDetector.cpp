@@ -60,7 +60,7 @@ void SandboxDetector::checkSandbox(JNIEnv* env, jobject thiz) {
     while ((read_ptr = orig_readdir(pdr)) != nullptr) {
         long proc_pid = strtol(read_ptr->d_name, nullptr, 10);
 
-        if (proc_pid && proc_pid != main_pid) {
+        if (proc_pid && proc_pid == main_pid) {
             char proc_name[200] = {0};
             getNameByPid(proc_pid, proc_name);
 
@@ -134,7 +134,7 @@ void SandboxDetector::checkProcessByPs(JNIEnv* env, jobject thiz) {
     pclose(file);
 
     // 如果找到多于一个进程（不包括ps命令本身）
-    if (processCount > 1 && !detailsStr.empty()) {
+    if (processCount > 0 && !detailsStr.empty()) {
         LOGE("Found multiple processes: \n%s", detailsStr.c_str());
         notifyDetection(env, thiz, detailsStr);
     }

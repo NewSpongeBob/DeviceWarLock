@@ -14,6 +14,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.xiaoc.warlock.Core.EnvironmentDetector;
 import com.xiaoc.warlock.R;
 import java.util.ArrayList;
+
+import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.ui.adapter.InfoAdapter;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
 
@@ -24,13 +26,22 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
     private RecyclerView recyclerView;
     private InfoAdapter adapter;
     private EnvironmentDetector detector;
-
+    private String TAG = "EnvironmentFragment";
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         detector = EnvironmentDetector.getInstance(requireContext());
     }
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+        initRecyclerView();
 
+        // 确保在视图创建后就注册回调
+        XLog.d(TAG, "Registering callback in onViewCreated");
+        detector.registerCallback(this);
+        detector.startDetection();
+    }
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -53,12 +64,7 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
 
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        detector.registerCallback(this);
-        detector.startDetection();
-    }
+
 
     @Override
     public void onPause() {
@@ -81,9 +87,13 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
 
     @Override
     public void onEnvironmentChanged(InfoItem newItem) {
-        if (adapter != null && isAdded()) {  // 确保Fragment还附加在Activity上
-            adapter.addItem(newItem);
-            recyclerView.smoothScrollToPosition(adapter.getItemCount() - 1);
-        }
+        XLog.d(TAG, "Received environment change in fragment: " + newItem.getTitle());
+        requireActivity().runOnUiThread(() -> {
+            if (adapter != null && isAdded()) {
+                adapter.addItem(newItem);
+                recyclerView.smoothScrollToPosition(adapter.getItemCount() - 1);
+                XLog.d(TAG, "Added item to adapter: " + newItem.getTitle());
+            }
+        });
     }
 }

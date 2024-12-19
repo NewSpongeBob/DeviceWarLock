@@ -1,6 +1,8 @@
 package com.xiaoc.warlock.Core;
 
 import android.content.Context;
+
+import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
 
 public abstract class BaseDetector {
@@ -19,6 +21,7 @@ public abstract class BaseDetector {
     public abstract void detect();
 
     protected void reportAbnormal(InfoItem item) {
+        XLog.e("qiaoliwa", String.valueOf(item));
         if (callback != null) {
             callback.onAbnormalDetected(item);
         }

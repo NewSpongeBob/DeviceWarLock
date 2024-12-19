@@ -1,6 +1,7 @@
 package com.xiaoc.warlock.Core.detector;
 
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -12,7 +13,9 @@ import com.xiaoc.warlock.App;
 import com.xiaoc.warlock.BuildConfig;
 import com.xiaoc.warlock.Core.BaseDetector;
 import com.xiaoc.warlock.Util.AppChecker;
+import com.xiaoc.warlock.Util.MiscUtil;
 import com.xiaoc.warlock.Util.WarningBuilder;
+import com.xiaoc.warlock.Util.XCommandUtil;
 import com.xiaoc.warlock.Util.XFile;
 import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
@@ -272,6 +275,196 @@ public class MiscDetector extends BaseDetector {
             XLog.e(TAG, "检查VPN状态失败", e);
         }
     }
+    private void checkLineageOS() {
+        try {
+            List<String> abnormalDetails = new ArrayList<>();
+
+            // 方法1: 检查系统属性
+            String[] lineageProps = {
+                    "ro.build.display.id",
+                    "ro.lineage.version",
+                    "ro.modversion",
+                    "ro.lineage.releasetype",
+                    "ro.lineage.build.version",
+                    "ro.lineage.device",
+                    "ro.lineage.release.type"
+            };
+
+            for (String prop : lineageProps) {
+                String value = MiscUtil.getSystemProperty(prop);
+                if (value != null && value.toLowerCase().contains("lineage")) {
+                    abnormalDetails.add("Prop: " +  value);
+                }
+            }
+
+            // 方法2: 检查特征文件
+            String[] lineageFiles = {
+                    "/system/addon.d",
+                    "/system/etc/init/lineage.rc",
+                    "/system/etc/permissions/org.lineageos.platform.xml",
+                    "/system/framework/lineage-framework.jar",
+                    "/system/etc/permissions/org.lineageos.hardware.xml",
+                    "/system/etc/permissions/org.lineageos.weather.xml"
+            };
+
+            for (String path : lineageFiles) {
+                if (XFile.exists(path)) {
+                    abnormalDetails.add("File: " + path);
+                }
+            }
+
+            // 方法3: 检查系统应用
+            String[] lineageApps = {
+                    "org.lineageos.updater",              // Lineage更新器
+                    "org.lineageos.settings",             // Lineage设置
+                    "lineageos.platform",                 // Lineage平台
+                    "org.lineageos.recorder",             // Lineage录音机
+                    "org.lineageos.profiles",             // Lineage配置文件
+                    "org.lineageos.setupwizard",          // Lineage设置向导
+                    "org.lineageos.snap",                 // Lineage相机
+                    "org.lineageos.weather.provider",     // Lineage天气提供者
+                    "org.lineageos.audiofx"               // Lineage音效
+            };
+
+            PackageManager pm = context.getPackageManager();
+            int lineageAppCount = 0;
+
+            for (String packageName : lineageApps) {
+                try {
+                    pm.getPackageInfo(packageName, PackageManager.GET_ACTIVITIES);
+                    lineageAppCount++;
+                    if (lineageAppCount <= 3) { // 只记录前3个发现的应用
+                        abnormalDetails.add("LineageOS App: " + packageName);
+                    }
+                } catch (PackageManager.NameNotFoundException ignored) {
+                    // 包未安装，继续检查下一个
+                }
+            }
+
+
+            // 方法4: 检查系统指纹
+            String fingerprint = Build.FINGERPRINT.toLowerCase();
+            if (fingerprint.contains("lineage")) {
+                abnormalDetails.add("fingerprint: " + fingerprint);
+            }
+
+            // 如果发现任何LineageOS特征
+            if (!abnormalDetails.isEmpty()) {
+                StringBuilder details = new StringBuilder();
+                for (String detail : abnormalDetails) {
+                    details.append(detail).append("\n");
+                }
+
+                InfoItem warning = new WarningBuilder("checkLineageOS", null)
+                        .addDetail("check", details.toString().trim())
+                        .addDetail("level", "low")
+                        .build();
+
+                reportAbnormal(warning);
+              //  XLog.d(TAG, "检测到LineageOS系统: " + details);
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "LineageOS检测失败", e);
+        }
+    }
+    private void checkGoogleDevice() {
+        try {
+            List<String> abnormalDetails = new ArrayList<>();
+
+            // 方法1: 检查制造商和品牌
+            String manufacturer = Build.MANUFACTURER.toLowerCase();
+            String brand = Build.BRAND.toLowerCase();
+            String model = Build.MODEL.toLowerCase();
+
+            if (manufacturer.contains("google") || brand.contains("google") ||
+                    model.contains("pixel") || model.contains("nexus")) {
+                abnormalDetails.add(String.format("DeviceInfo: manufacturer=%s, brand=%s, model=%s",
+                        manufacturer, brand, model));
+            }
+
+            // 方法2: 检查系统属性
+            String[] googleProps = {
+                    "ro.product.manufacturer",
+                    "ro.product.brand",
+                    "ro.product.name",
+                    "ro.product.device",
+                    "ro.build.flavor",
+                    "ro.vendor.build.fingerprint",
+                    "ro.bootloader"
+            };
+
+            for (String prop : googleProps) {
+                String value = MiscUtil.getSystemProperty(prop);
+                if (value != null && (value.toLowerCase().contains("google") ||
+                        value.toLowerCase().contains("pixel") ||
+                        value.toLowerCase().contains("nexus"))) {
+                    abnormalDetails.add("Prop: "  + value);
+                }
+            }
+
+            // 方法3: 检查Google特有应用
+            String[] googleApps = {
+                    "com.google.android.gms",              // Google Play Services
+                    "com.google.android.gsf",              // Google Services Framework
+                    "com.google.android.apps.pixelmigrate",// Pixel迁移工具
+                    "com.google.android.apps.restore",     // Pixel数据恢复
+                    "com.google.android.apps.wellbeing",   // Digital Wellbeing
+                    "com.google.android.apps.safetyhub",   // Personal Safety
+                    "com.google.android.apps.turbo",       // Device Health Services
+                    "com.google.android.as",               // Device Personalization Services
+                    "com.google.android.apps.subscriptions.red" // Google One
+            };
+
+            PackageManager pm = context.getPackageManager();
+            int googleAppCount = 0;
+
+            for (String packageName : googleApps) {
+                try {
+                    pm.getPackageInfo(packageName, PackageManager.GET_ACTIVITIES);
+                    googleAppCount++;
+                    if (googleAppCount <= 3) {
+                        abnormalDetails.add("Google App: " + packageName);
+                    }
+                } catch (PackageManager.NameNotFoundException ignored) {
+                    // 包未安装，继续检查下一个
+                }
+            }
+
+
+            // 方法4: 检查特征文件
+            String[] googleFiles = {
+                    "/system/etc/sysconfig/pixel.xml",
+                    "/system/etc/sysconfig/pixel_experience_2020.xml",
+                    "/system/etc/sysconfig/google.xml",
+                    "/system/etc/sysconfig/google_build.xml",
+                    "/vendor/etc/sensors/sensor_def_google.xml"
+            };
+
+            for (String path : googleFiles) {
+                if (XFile.exists(path)) {
+                    abnormalDetails.add("File: " + path);
+                }
+            }
+
+            if (!abnormalDetails.isEmpty()) {
+                StringBuilder details = new StringBuilder();
+                for (String detail : abnormalDetails) {
+                    details.append(detail).append("\n");
+                }
+
+                InfoItem warning = new WarningBuilder("checkGoogleDevice", null)
+                        .addDetail("check", details.toString().trim())
+                        .addDetail("level", "low")
+                        .build();
+
+                reportAbnormal(warning);
+         //       XLog.d(TAG, "检测到Google设备: " + details);
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "Google设备检测失败", e);
+        }
+    }
+
     @Override
     public void detect() {
         checkReflectionAvailable();
@@ -282,5 +475,7 @@ public class MiscDetector extends BaseDetector {
         checkAdbDebug();
         checkDevelopmentSettings();
         checkVpnConnection();
+        checkGoogleDevice();
+        checkLineageOS();
     }
 }

@@ -7,6 +7,7 @@ import android.hardware.camera2.CameraManager;
 
 import com.xiaoc.warlock.BuildConfig;
 import com.xiaoc.warlock.Core.BaseDetector;
+import com.xiaoc.warlock.Util.MiscUtil;
 import com.xiaoc.warlock.Util.WarningBuilder;
 import com.xiaoc.warlock.Util.XCommandUtil;
 import com.xiaoc.warlock.Util.XFile;
@@ -31,15 +32,7 @@ public class VirtualDetector extends BaseDetector {
         checkSensorSize();
         checkEmulatorProps();
     }
-    private String getSystemProperty(String prop) {
-        try {
-            Class<?> cls = Class.forName("android.os.SystemProperties");
-            Method method = cls.getMethod("get", String.class);
-            return (String) method.invoke(null, prop);
-        } catch (Exception e) {
-            return "";
-        }
-    }
+
 
     /**
      * 检测设备的摄像头个数
@@ -186,7 +179,7 @@ public class VirtualDetector extends BaseDetector {
 
             List<String> foundProps = new ArrayList<>();
             for (String prop : BuildConfig.QEMU_PROPS) {
-                String value = getSystemProperty(prop);
+                String value = MiscUtil.getSystemProperty(prop);
                 if (value != null && !value.isEmpty()) {
                     foundProps.add(prop + "=" + value);
                 }
