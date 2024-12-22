@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <fcntl.h>
 #include "../inc/collector/NativeCollector.h"
+#include "../inc/detector/NativeDetector.h"
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -22,8 +23,10 @@ Java_com_xiaoc_warlock_Util_NativeEngine_startCollect(JNIEnv *env, jclass clazz,
 
 JNIEXPORT jstring JNICALL
 Java_com_xiaoc_warlock_Util_NativeEngine_getCollectedInfo(JNIEnv *env, jclass clazz);
-
-
+JNIEXPORT void JNICALL
+Java_com_xiaoc_warlock_Util_NativeEngine_startDetect(JNIEnv *env, jclass /* clazz */, jobject callback);
+JNIEXPORT void JNICALL
+Java_com_xiaoc_warlock_Util_NativeEngine_stopDetect(JNIEnv *env, jclass /* clazz */);
 #ifdef __cplusplus
 }
 #endif

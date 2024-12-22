@@ -33,6 +33,7 @@ include_directories(
         inc/collector/
         inc/utils/
         inc/netlink/
+        inc/detector/
 )
 
 # 主库源文件
@@ -50,6 +51,7 @@ set(SOURCE_FILES
         src/utils/XsonCollector.cpp
         src/netlink/ifaddrs.cpp
         src/netlink/NetlinkConnection.cpp
+        src/detector/NativeDetector.cpp
         ${syscall}
 )
 

@@ -6,6 +6,7 @@ import android.content.pm.PackageManager;
 import com.xiaoc.warlock.BuildConfig;
 import com.xiaoc.warlock.Core.BaseDetector;
 import com.xiaoc.warlock.Util.XCommandUtil;
+import com.xiaoc.warlock.Util.XFile;
 import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
 import com.xiaoc.warlock.Util.WarningBuilder;
@@ -42,6 +43,8 @@ public class RootDetector extends BaseDetector {
         checkRootFiles();
         checkSeLinux();
         checkUnLock();
+        checkMountFile();
+        checkMapsFile();
     }
 
     /**
@@ -260,6 +263,67 @@ public class RootDetector extends BaseDetector {
             XLog.e(TAG, "checkUnLock失败", e);
         }
     }
+    private void checkMountFile() {
+        try {
+            String mountContent = XFile.readFile("/proc/mounts");
+            if (mountContent != null) {
+                StringBuilder details = new StringBuilder();
+                boolean found = false;
 
+                for (String line : mountContent.split("\n")) {
+                    String lowerLine = line.toLowerCase();
+                    for (String keyword : BuildConfig.MOUNT_KEYWORDS) {
+                        if (lowerLine.contains(keyword)) {
+                            details.append("[").append(keyword).append("]: ")
+                                    .append(line).append("\n");
+                            found = true;
+                        }
+                    }
+                }
 
+                if (found) {
+                    InfoItem warning = new WarningBuilder("checkMountFile", null)
+                            .addDetail("check", details.toString().trim())
+                            .addDetail("level", "medium")
+                            .build();
+
+                    reportAbnormal(warning);
+                }
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to check mount file", e);
+        }
+    }
+
+    private void checkMapsFile() {
+        try {
+            String mapsContent = XFile.readFile("/proc/self/maps");
+            if (mapsContent != null) {
+                StringBuilder details = new StringBuilder();
+                boolean found = false;
+
+                for (String line : mapsContent.split("\n")) {
+                    String lowerLine = line.toLowerCase();
+                    for (String keyword : BuildConfig.MAPS_KEYWORDS) {
+                        if (lowerLine.contains(keyword)) {
+                            details.append("[").append(keyword).append("]: ")
+                                    .append(line).append("\n");
+                            found = true;
+                        }
+                    }
+                }
+
+                if (found) {
+                    InfoItem warning = new WarningBuilder("checkMapsFile", null)
+                            .addDetail("check", details.toString().trim())
+                            .addDetail("level", "high")
+                            .build();
+
+                    reportAbnormal(warning);
+                }
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to check maps file", e);
+        }
+    }
 }

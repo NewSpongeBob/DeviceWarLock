@@ -8,6 +8,7 @@ import com.xiaoc.warlock.Core.detector.CloudPhoneDetector;
 import com.xiaoc.warlock.Core.detector.MiscDetector;
 import com.xiaoc.warlock.Core.detector.RootDetector;
 import com.xiaoc.warlock.Core.detector.SandboxDetector;
+import com.xiaoc.warlock.Core.detector.SignatureDetector;
 import com.xiaoc.warlock.Core.detector.VirtualDetector;
 import com.xiaoc.warlock.Core.detector.XposedDetector;
 import com.xiaoc.warlock.Util.XLog;
@@ -55,7 +56,8 @@ public class EnvironmentDetector  implements BaseDetector.EnvironmentCallback{
                 new MiscDetector(context,this),
                 new XposedDetector(context,this),
                 new SandboxDetector(context,this),
-                new CloudPhoneDetector(context,this)
+                new CloudPhoneDetector(context,this),
+                new SignatureDetector(context,this)
 
                 // 添加更多检测器...
         );
@@ -91,19 +93,15 @@ public class EnvironmentDetector  implements BaseDetector.EnvironmentCallback{
     public void startDetection() {
         if (isDetecting) return;
         isDetecting = true;
-        startDetectionLoop();
+        for (BaseDetector detector : detectors) {
+            detector.detect();
+        }
     }
 
     public void stopDetection() {
         handler.removeCallbacksAndMessages(null);
     }
 
-    private void startDetectionLoop() {
-        // 执行所有检测器
-        for (BaseDetector detector : detectors) {
-            detector.detect();
-        }
-    }
 
     private void notifyEnvironmentChange(InfoItem item) {
         handler.post(() -> {

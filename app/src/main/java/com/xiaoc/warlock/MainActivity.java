@@ -38,7 +38,6 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
         context = this;
         mainUI = new MainUI(this);
 
-
         XLog.init(this, XLog.DEBUG, true);
     }
 

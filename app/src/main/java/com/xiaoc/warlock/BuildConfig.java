@@ -45,6 +45,32 @@ public class BuildConfig {
          "/data/local/tmp/shizuku",
          "/data/local/tmp/shizuku_starter"
  };
+ // 挂载点特征
+ public static final List<String> MOUNT_KEYWORDS = Arrays.asList(
+         "apatch",
+         "ksu",
+         "magisk",
+         "supersu",
+         "xposed",
+         "edxposed",
+         "lsposed"
+ );
+
+ // 内存映射特征
+ public static final List<String> MAPS_KEYWORDS = Arrays.asList(
+         "lspatch",
+         "xposed",
+         "edxposed",
+         "lsposed",
+         "riru",
+         "zygisk",
+         "magisk",
+         "epic",
+         "taichi",
+         "virtualapp",
+         "substratego",
+         "dexposed"
+ );
  /**
   * 模拟器共享文件夹路径列表
   */
@@ -79,7 +105,6 @@ public class BuildConfig {
   */
  public static final String[] QEMU_PROPS = {
          "ro.kernel.qemu.avd_name",
-         "ro.kernel.qemu.gles",
          "ro.kernel.qemu.gltransport",
          "ro.kernel.qemu.opengles.version",
          "ro.kernel.qemu.uirenderer",

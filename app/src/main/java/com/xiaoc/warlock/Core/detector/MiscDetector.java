@@ -1,7 +1,12 @@
 package com.xiaoc.warlock.Core.detector;
 
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.location.Location;
+import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -15,11 +20,11 @@ import com.xiaoc.warlock.Core.BaseDetector;
 import com.xiaoc.warlock.Util.AppChecker;
 import com.xiaoc.warlock.Util.MiscUtil;
 import com.xiaoc.warlock.Util.WarningBuilder;
-import com.xiaoc.warlock.Util.XCommandUtil;
+
 import com.xiaoc.warlock.Util.XFile;
 import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
-
+import android.Manifest.permission;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -404,8 +409,6 @@ public class MiscDetector extends BaseDetector {
 
             // 方法3: 检查Google特有应用
             String[] googleApps = {
-                    "com.google.android.gms",              // Google Play Services
-                    "com.google.android.gsf",              // Google Services Framework
                     "com.google.android.apps.pixelmigrate",// Pixel迁移工具
                     "com.google.android.apps.restore",     // Pixel数据恢复
                     "com.google.android.apps.wellbeing",   // Digital Wellbeing
@@ -464,6 +467,117 @@ public class MiscDetector extends BaseDetector {
             XLog.e(TAG, "Google设备检测失败", e);
         }
     }
+    /**
+     * 检测当前位置是否被模拟
+     */
+    private void checkMockLocation() {
+        try {
+            LocationManager locationManager =
+                    (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+
+            if (locationManager != null) {
+                // 先检查GPS位置
+                Location gpsLocation = locationManager.getLastKnownLocation(LocationManager.GPS_PROVIDER);
+                if (gpsLocation != null && gpsLocation.isFromMockProvider()) {
+                    reportMockLocation("GPS", gpsLocation);
+                    return;
+                }
+
+                // 再检查网络位置
+                Location networkLocation = locationManager.getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+                if (networkLocation != null && networkLocation.isFromMockProvider()) {
+                    reportMockLocation("Network", networkLocation);
+                    return;
+                }
+
+                // 如果都没有，检查最后一个已知位置
+                Location lastLocation = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
+                if (lastLocation != null && lastLocation.isFromMockProvider()) {
+                    reportMockLocation("Passive", lastLocation);
+                    return;
+                }
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to check mock location", e);
+        }
+    }
+    private void reportMockLocation(String provider, Location location) {
+        String details = String.format(
+                "检测到模拟位置\n提供者: %s\n经度: %f\n纬度: %f",
+                provider,
+                location.getLongitude(),
+                location.getLatitude()
+        );
+
+        InfoItem warning = new WarningBuilder("checkMockLocation", null)
+                .addDetail("check", details.trim())
+                .addDetail("level", "high")
+                .build();
+
+        reportAbnormal(warning);
+    }
+    /**
+     * 检测是否安装了具有模拟位置权限的应用
+     */
+    private void checkAllowMockLocation() {
+        try {
+            if (!Settings.Secure.getString(context.getContentResolver(),
+                    Settings.Secure.ALLOW_MOCK_LOCATION).equals("0")){
+
+                InfoItem warning = new WarningBuilder("checkAllowMockLocation", null)
+                        .addDetail("check", "Allow Mock Location")
+                        .addDetail("level", "low")
+                        .build();
+
+                reportAbnormal(warning);
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to check allow mock location setting", e);
+        }
+    }
+    /**
+     * 检测是否安装了具有模拟位置权限的应用
+     */
+    private void checkMockLocationApps() {
+        try {
+            PackageManager pm = context.getPackageManager();
+            List<PackageInfo> packages = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS);
+            List<String> mockApps = new ArrayList<>();
+
+            for (PackageInfo packageInfo : packages) {
+                if (packageInfo.requestedPermissions != null) {
+                    for (String permission : packageInfo.requestedPermissions) {
+                        if (permission.equals("android.permission.ACCESS_MOCK_LOCATION")) {
+                            try {
+                                ApplicationInfo appInfo =
+                                        pm.getApplicationInfo(packageInfo.packageName, 0);
+                                String appName = pm.getApplicationLabel(appInfo).toString();
+                                mockApps.add(appName + " (" + packageInfo.packageName + ")");
+                            } catch (PackageManager.NameNotFoundException e) {
+                                mockApps.add(packageInfo.packageName);
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (!mockApps.isEmpty()) {
+                String details = "发现具有模拟位置权限的应用:\n" +
+                        String.join("\n", mockApps);
+
+                InfoItem warning = new WarningBuilder("checkMockLocationApps", null)
+                        .addDetail("check", details.trim())
+                        .addDetail("level", "low")
+                        .build();
+
+                reportAbnormal(warning);
+            }
+
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to check mock location apps", e);
+        }
+    }
 
     @Override
     public void detect() {
@@ -477,5 +591,8 @@ public class MiscDetector extends BaseDetector {
         checkVpnConnection();
         checkGoogleDevice();
         checkLineageOS();
+        checkMockLocation();
+        checkAllowMockLocation();
+        checkMockLocationApps();
     }
 }

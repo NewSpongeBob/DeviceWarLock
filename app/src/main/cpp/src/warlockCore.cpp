@@ -43,6 +43,14 @@ Java_com_xiaoc_warlock_Util_NativeEngine_getCollectedInfo(JNIEnv *env, jclass /*
     std::string jsonStr = NativeCollector::getInstance()->getCollectedInfo();
     return env->NewStringUTF(jsonStr.c_str());
 }
+JNIEXPORT void JNICALL
+Java_com_xiaoc_warlock_Util_NativeEngine_startDetect(JNIEnv *env, jclass /* clazz */, jobject callback) {
+    NativeDetector::getInstance()->startDetect(env, callback);
+}
 
+JNIEXPORT void JNICALL
+Java_com_xiaoc_warlock_Util_NativeEngine_stopDetect(JNIEnv *env, jclass /* clazz */) {
+    NativeDetector::getInstance()->stopDetect();
+}
 
 }
