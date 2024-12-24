@@ -11,7 +11,7 @@ public class App extends Application {
     public void onCreate() {
         super.onCreate();
         AppChecker.checkStackTrace(new Exception());
-
+        AppChecker.checkReflectionSupport();
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
                 Reflection.unseal(this);

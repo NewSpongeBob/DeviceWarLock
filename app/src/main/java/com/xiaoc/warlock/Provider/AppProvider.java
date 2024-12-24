@@ -20,11 +20,11 @@ public class AppProvider extends ContentProvider {
 
     @Override
     public boolean onCreate() {
-        startZhenxiService();
-        AppChecker.checkReflectionSupport();
+        startWarLockService();
+        //AppChecker.checkReflectionSupport();
         return true;
     }
-    private void startZhenxiService() {
+    private void startWarLockService() {
         if (getContext() != null) {
             Intent intent = new Intent(getContext(), WarLockServer.class);
             getContext().startService(intent);

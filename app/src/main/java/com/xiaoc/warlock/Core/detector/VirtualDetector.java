@@ -31,6 +31,7 @@ public class VirtualDetector extends BaseDetector {
         checkEmulatorMounts();
         checkSensorSize();
         checkEmulatorProps();
+        checkCameraSize();
     }
 
 
@@ -190,13 +191,15 @@ public class VirtualDetector extends BaseDetector {
                 for (String prop : foundProps) {
                     details.append(prop).append("\n");
                 }
+                if (details.length()>=2){
+                    InfoItem warning = new WarningBuilder("checkEmulatorProps", null)
+                            .addDetail("check", details.toString().trim())
+                            .addDetail("level", "high")
+                            .build();
 
-                InfoItem warning = new WarningBuilder("checkEmulatorProps", null)
-                        .addDetail("check", details.toString().trim())
-                        .addDetail("level", "high")
-                        .build();
+                    reportAbnormal(warning);
+                }
 
-                reportAbnormal(warning);
             }
         } catch (Exception e) {
         }

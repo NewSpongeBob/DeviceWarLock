@@ -27,7 +27,6 @@ public class WarLockServer extends Service {
         @Override
         public void ping() {
             XLog.d(TAG, "Service received ping request");
-            // 即使是空实现，也添加日志
         }
     };
 

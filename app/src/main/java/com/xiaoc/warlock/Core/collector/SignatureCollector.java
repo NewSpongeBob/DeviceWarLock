@@ -40,7 +40,7 @@ public class SignatureCollector extends BaseCollector {
             String normalSignature = packageInfo.signatures[0].toCharsString();
 
             // 方法2: Binder方式
-            String binderSignature = getSignatureViaBinder();
+            String binderSignature = getAppSignatureForBinder(context);
 
             Map<String, Object> signatureInfo = new LinkedHashMap<>();
             if (normalSignature != null && binderSignature != null) {
@@ -68,7 +68,7 @@ public class SignatureCollector extends BaseCollector {
             String normalMD5 = getSignatureMD5(packageInfo.signatures[0]);
 
             // 方法2: Binder方式获取签名
-            String binderMD5 = getSignatureMD5ViaBinder();
+            String binderMD5 = getAppSignaturemd5ForBinder(context);
 
             Map<String, Object> fingerprintInfo = new LinkedHashMap<>();
 
@@ -112,154 +112,120 @@ public class SignatureCollector extends BaseCollector {
     /**
      * 通过Binder获取签名MD5指纹
      */
-    private String getSignatureMD5ViaBinder() {
-        Parcel data = null;
-        Parcel reply = null;
-
+    private  String getAppSignaturemd5ForBinder(Context context) {
+        Signature signature ;
+        String signaturemd5 = "";
         try {
-            // 获取PackageManager对象
-            PackageManager pm = context.getPackageManager();
-
-            // 获取IPackageManager的Binder对象
-            Class<?> pmClass = Class.forName("android.app.ApplicationPackageManager");
-            Field mPmField = pmClass.getDeclaredField("mPM");
+            PackageManager packageManager = context.getPackageManager();
+            // 通过反射获取 mPM 字段
+            Field mPmField = packageManager.getClass().getDeclaredField("mPM");
             mPmField.setAccessible(true);
-            Object mPM = mPmField.get(pm);
+            Object iPackageManager = mPmField.get(packageManager);
 
-            Field mRemoteField = mPM.getClass().getDeclaredField("mRemote");
+            // 获取 mRemote
+            Field mRemoteField = iPackageManager.getClass().getDeclaredField("mRemote");
             mRemoteField.setAccessible(true);
-            IBinder binder = (IBinder) mRemoteField.get(mPM);
-
-            if (binder == null) return null;
+            IBinder binder = (IBinder) mRemoteField.get(iPackageManager);
 
             // 准备Parcel数据
-            data = Parcel.obtain();
-            reply = Parcel.obtain();
+            Parcel data = Parcel.obtain();
+            Parcel reply = Parcel.obtain();
 
-            // 写入接口标识
-            data.writeInterfaceToken("android.content.pm.IPackageManager");
+            try {
+                // 写入接口标识
+                data.writeInterfaceToken("android.content.pm.IPackageManager");
+                // 写入包名
+                data.writeString(context.getPackageName());
+                // 写入获取签名的flag
+                data.writeLong(PackageManager.GET_SIGNATURES);
+                // 写入当前进程uid
+                data.writeInt(Process.myUid());
 
-            // 写入参数
-            data.writeString(context.getPackageName());
-            data.writeInt(PackageManager.GET_SIGNATURES);
+                // 执行transact调用
+                binder.transact(getTransactionId(), data, reply, 0);
+                // 读取异常信息(如果有)
+                reply.readException();
+                // 读取返回的PackageInfo对象
+                PackageInfo packageInfo = reply.readTypedObject(PackageInfo.CREATOR);
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                data.writeInt(context.getAttributionTag() != null ? 1 : 0);
-                if (context.getAttributionTag() != null) {
-                    data.writeString(context.getAttributionTag());
+                if (packageInfo != null && packageInfo.signatures != null && packageInfo.signatures.length > 0) {
+                    signature = packageInfo.signatures[0];
+                    signaturemd5 = getSignatureMD5(signature);
                 }
+            } finally {
+                // 回收Parcel
+                data.recycle();
+                reply.recycle();
             }
-
-            data.writeInt(Process.myUid() / 100000);
-
-            // 获取TRANSACTION_getPackageInfo值
-            Class<?> stubClass = Class.forName("android.content.pm.IPackageManager$Stub");
-            Field transactionField = stubClass.getDeclaredField("TRANSACTION_getPackageInfo");
-            transactionField.setAccessible(true);
-            int transaction = transactionField.getInt(null);
-
-            // 执行Binder调用
-            binder.transact(transaction, data, reply, 0);
-            reply.readException();
-
-            // 读取返回的PackageInfo对象
-            PackageInfo packageInfo;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                packageInfo = reply.readTypedObject(PackageInfo.CREATOR);
-            } else {
-                packageInfo = PackageInfo.CREATOR.createFromParcel(reply);
-            }
-
-            if (packageInfo != null && packageInfo.signatures != null &&
-                    packageInfo.signatures.length > 0) {
-                return getSignatureMD5(packageInfo.signatures[0]);
-            }
-
-            return null;
         } catch (Exception e) {
-            XLog.e(TAG, "Failed to get signature MD5 via binder", e);
-            return null;
-        } finally {
-            if (data != null) data.recycle();
-            if (reply != null) reply.recycle();
+            e.printStackTrace();
         }
+        return signaturemd5;
     }
     /**
      * 通过Binder获取签名信息
      */
-    private String getSignatureViaBinder() {
-        Parcel data = null;
-        Parcel reply = null;
-
+    public static String getAppSignatureForBinder(Context context) {
+        String signature = "";
         try {
-            // 获取PackageManager对象
-            PackageManager pm = context.getPackageManager();
-
-            // 获取IPackageManager的Binder对象
-            Class<?> pmClass = Class.forName("android.app.ApplicationPackageManager");
-            Field mPmField = pmClass.getDeclaredField("mPM");
+            PackageManager packageManager = context.getPackageManager();
+            // 通过反射获取 mPM 字段
+            Field mPmField = packageManager.getClass().getDeclaredField("mPM");
             mPmField.setAccessible(true);
-            Object mPM = mPmField.get(pm);
+            Object iPackageManager = mPmField.get(packageManager);
 
-            Field mRemoteField = mPM.getClass().getDeclaredField("mRemote");
+            // 获取 mRemote
+            Field mRemoteField = iPackageManager.getClass().getDeclaredField("mRemote");
             mRemoteField.setAccessible(true);
-            IBinder binder = (IBinder) mRemoteField.get(mPM);
-
-            if (binder == null) return null;
+            IBinder binder = (IBinder) mRemoteField.get(iPackageManager);
 
             // 准备Parcel数据
-            data = Parcel.obtain();
-            reply = Parcel.obtain();
+            Parcel data = Parcel.obtain();
+            Parcel reply = Parcel.obtain();
 
-            // 写入接口标识
-            data.writeInterfaceToken("android.content.pm.IPackageManager");
+            try {
+                // 写入接口标识
+                data.writeInterfaceToken("android.content.pm.IPackageManager");
+                // 写入包名
+                data.writeString(context.getPackageName());
+                // 写入获取签名的flag
+                data.writeLong(PackageManager.GET_SIGNATURES);
+                // 写入当前进程uid
+                data.writeInt(Process.myUid());
 
-            // 写入参数
-            data.writeString(context.getPackageName());
-            data.writeInt(PackageManager.GET_SIGNATURES);  // 修改为writeInt
+                // 执行transact调用
+                binder.transact(getTransactionId(), data, reply, 0);
+                // 读取异常信息(如果有)
+                reply.readException();
+                // 读取返回的PackageInfo对象
+                PackageInfo packageInfo = reply.readTypedObject(PackageInfo.CREATOR);
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                data.writeInt(context.getAttributionTag() != null ? 1 : 0);
-                if (context.getAttributionTag() != null) {
-                    data.writeString(context.getAttributionTag());
+                if (packageInfo != null && packageInfo.signatures != null && packageInfo.signatures.length > 0) {
+                    signature = packageInfo.signatures[0].toCharsString();
                 }
+            } finally {
+                // 回收Parcel
+                data.recycle();
+                reply.recycle();
             }
-
-            data.writeInt(Process.myUid() / 100000);  // userId
-
-            // 获取TRANSACTION_getPackageInfo值
-            Class<?> stubClass = Class.forName("android.content.pm.IPackageManager$Stub");
-            Field transactionField = stubClass.getDeclaredField("TRANSACTION_getPackageInfo");
-            transactionField.setAccessible(true);
-            int transaction = transactionField.getInt(null);
-
-            // 执行Binder调用
-            binder.transact(transaction, data, reply, 0);
-            reply.readException();
-
-            // 读取返回的PackageInfo对象
-            PackageInfo packageInfo;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                packageInfo = reply.readTypedObject(PackageInfo.CREATOR);
-            } else {
-                packageInfo = PackageInfo.CREATOR.createFromParcel(reply);
-            }
-
-            if (packageInfo != null && packageInfo.signatures != null &&
-                    packageInfo.signatures.length > 0) {
-                return packageInfo.signatures[0].toCharsString();
-            }
-
-            return null;
         } catch (Exception e) {
-            XLog.e(TAG, "Failed to get signature via binder", e);
-            return null;
-        } finally {
-            if (data != null) data.recycle();
-            if (reply != null) reply.recycle();
+            e.printStackTrace();
         }
+        return signature;
     }
 
+    // 获取TRANSACTION_getPackageInfo的值
+    private static int getTransactionId() {
+        try {
+            Class<?> stubClass = Class.forName("android.content.pm.IPackageManager$Stub");
+            Field field = stubClass.getDeclaredField("TRANSACTION_getPackageInfo");
+            field.setAccessible(true);
+            return field.getInt(null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return -1;
+    }
 
 
 

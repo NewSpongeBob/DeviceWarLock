@@ -9,6 +9,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.xiaoc.warlock.Core.CollectCallback;
 import com.xiaoc.warlock.Core.Warlock;
 
+import com.xiaoc.warlock.Util.API;
 import com.xiaoc.warlock.Util.NativeEngine;
 import com.xiaoc.warlock.Util.XFile;
 import com.xiaoc.warlock.Util.XLog;
@@ -37,7 +38,7 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
     private void initEnvironment() {
         context = this;
         mainUI = new MainUI(this);
-
+        API.setHideShowWarning();
         XLog.init(this, XLog.DEBUG, true);
     }
 
