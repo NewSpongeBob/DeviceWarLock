@@ -1,5 +1,6 @@
 package com.xiaoc.warlock.Util;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -11,8 +12,9 @@ public class AppChecker {
     private static boolean isStackTraceBbnormal = false;
     public static void checkReflectionSupport() {
         try {
-            Class<?> cls = Class.forName("android.os.SystemProperties");
-            cls.getMethod("get", String.class).invoke(null, "ro.boot.verifiedbootstate");
+            Class<?> vmRuntimeClass = Class.forName("dalvik.system.VMRuntime");
+            Method getRuntime = vmRuntimeClass.getDeclaredMethod("getRuntime");
+            Method setHiddenApiExemptions = vmRuntimeClass.getDeclaredMethod("setHiddenApiExemptions", String[].class);
             isReflectionSupported = true;
         } catch (Exception e) {
             isReflectionSupported = false;

@@ -50,7 +50,7 @@ Java_com_xiaoc_warlock_Util_NativeEngine_startDetect(JNIEnv *env, jclass /* claz
 
 JNIEXPORT void JNICALL
 Java_com_xiaoc_warlock_Util_NativeEngine_stopDetect(JNIEnv *env, jclass /* clazz */) {
-    NativeDetector::getInstance()->stopDetect();
+    NativeDetector::getInstance()->cleanup();
 }
 
 }

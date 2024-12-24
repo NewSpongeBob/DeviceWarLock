@@ -186,19 +186,19 @@ public class VirtualDetector extends BaseDetector {
                 }
             }
 
-            if (!foundProps.isEmpty()) {
+            if (foundProps.size() >= 3) {
                 StringBuilder details = new StringBuilder();
                 for (String prop : foundProps) {
                     details.append(prop).append("\n");
                 }
-                if (details.length()>=2){
+
                     InfoItem warning = new WarningBuilder("checkEmulatorProps", null)
                             .addDetail("check", details.toString().trim())
                             .addDetail("level", "high")
                             .build();
 
                     reportAbnormal(warning);
-                }
+
 
             }
         } catch (Exception e) {

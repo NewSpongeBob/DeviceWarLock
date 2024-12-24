@@ -12,6 +12,8 @@ namespace utils {
         static std::string trim(const std::string& str);
         static std::vector<std::string> split(const std::string& str, const std::string& delim);
         static std::string join(const std::vector<std::string>& vec, const std::string& delim);
+        static bool contains(const std::string& str, const std::string& substr);
+
     };
 }
 

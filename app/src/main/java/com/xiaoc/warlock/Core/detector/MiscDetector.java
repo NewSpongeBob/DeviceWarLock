@@ -563,8 +563,7 @@ public class MiscDetector extends BaseDetector {
             }
 
             if (!mockApps.isEmpty()) {
-                String details = "发现具有模拟位置权限的应用:\n" +
-                        String.join("\n", mockApps);
+                String details = String.join("\n", mockApps);
 
                 InfoItem warning = new WarningBuilder("checkMockLocationApps", null)
                         .addDetail("check", details.trim())

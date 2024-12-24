@@ -2,30 +2,29 @@
 #define WARLOCK_NATIVEDETECTOR_H
 
 #include <jni.h>
-#include <string>
-#include <thread>
-#include <atomic>
-#include <unistd.h>
+#include <vector>
+#include <memory>
+#include "IDetector.h"
 
 class NativeDetector {
-private:
-    static NativeDetector* instance;
-    std::thread* detectThread;
-    std::atomic<bool> isRunning;
-    jobject globalCallback;
-    JavaVM* javaVM;
-
-    void detectLoop();
-    JNIEnv* getEnv();
-    void reportWarning(JNIEnv* env, const std::string& type, const std::string& level, const std::string& detail);
-
 public:
+    static NativeDetector* getInstance();
+    void startDetect(JNIEnv* env, jobject callback);
+    void cleanup();
+
+private:
     NativeDetector();
     ~NativeDetector();
 
-    static NativeDetector* getInstance();
-    void startDetect(JNIEnv* env, jobject callback);
-    void stopDetect();
+    void detect();
+    void initDetectors();
+    JNIEnv* getEnv();
+
+    static NativeDetector* instance;
+    std::vector<std::unique_ptr<IDetector>> detectors;
+
+    JavaVM* javaVM;
+    jobject globalCallback;
 };
 
-#endif // WARLOCK_NATIVEDETECTOR_H
+#endif

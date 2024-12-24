@@ -16,16 +16,14 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(rapidjson)
 
-# 架构相关配置
+# 只支持ARM架构
 if (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "arm64-v8a")
     set(syscall src/netlink/syscall64.s)
 elseif (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "armeabi-v7a")
     set(syscall src/netlink/syscall32.s)
-elseif (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "x86_64")
-    set(syscall src/netlink/syscall_x86_64.s)
-elseif (${CMAKE_ANDROID_ARCH_ABI} STREQUAL "x86")
-    set(syscall src/netlink/syscall_x86.s)
-endif ()
+else()
+    message(FATAL_ERROR "Unsupported architecture: ${CMAKE_ANDROID_ARCH_ABI}")
+endif()
 
 # 头文件目录
 include_directories(
@@ -52,6 +50,9 @@ set(SOURCE_FILES
         src/netlink/ifaddrs.cpp
         src/netlink/NetlinkConnection.cpp
         src/detector/NativeDetector.cpp
+        src/detector/VirtualDetector.cpp
+        src/utils/MiscUtil.cpp
+        src/utils/DetectorUtils.cpp
         ${syscall}
 )
 

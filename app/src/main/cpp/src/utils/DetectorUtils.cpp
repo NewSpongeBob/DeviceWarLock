@@ -1,16 +1,10 @@
-#include "../../inc/utils//DetectorUtils.h"
-#include "../../inc/utils/LogUtils.h"
-
-const std::string DetectorUtils::CHECK_MOUNT = "mount_check";
-const std::string DetectorUtils::CHECK_MAPS = "maps_check";
-
-const std::string DetectorUtils::LEVEL_HIGH = "high";
-const std::string DetectorUtils::LEVEL_MEDIUM = "medium";
-const std::string DetectorUtils::LEVEL_LOW = "low";
+#include "../inc/utils/DetectorUtils.h"
+#include "../inc/utils/LogUtils.h"
 
 void DetectorUtils::reportWarning(JNIEnv* env, jobject callback,
-                                  const std::string& type, const std::string& level, const std::string& detail) {
-
+                                  const std::string& type,
+                                  const std::string& level,
+                                  const std::string& detail) {
     if (!callback) {
         LOGE("Callback is null");
         return;
@@ -30,5 +24,6 @@ void DetectorUtils::reportWarning(JNIEnv* env, jobject callback,
         env->DeleteLocalRef(jType);
         env->DeleteLocalRef(jLevel);
         env->DeleteLocalRef(jDetail);
+        env->DeleteLocalRef(callbackClass);
     }
 }

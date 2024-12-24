@@ -6,17 +6,14 @@
 
 class DetectorUtils {
 public:
+    static constexpr const char* LEVEL_HIGH = "high";
+    static constexpr const char* LEVEL_MEDIUM = "medium";
+    static constexpr const char* LEVEL_LOW = "low";
+
     static void reportWarning(JNIEnv* env, jobject callback,
-                              const std::string& type, const std::string& level, const std::string& detail);
-
-    // 检测类型常量
-    static const std::string CHECK_MOUNT;
-    static const std::string CHECK_MAPS;
-
-    // 风险等级常量
-    static const std::string LEVEL_HIGH;
-    static const std::string LEVEL_MEDIUM;
-    static const std::string LEVEL_LOW;
+                              const std::string& type,
+                              const std::string& level,
+                              const std::string& detail);
 };
 
-#endif // WARLOCK_DETECTORUTILS_H
+#endif

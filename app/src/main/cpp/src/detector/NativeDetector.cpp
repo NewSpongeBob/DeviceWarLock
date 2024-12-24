@@ -1,16 +1,20 @@
 #include "../../inc/detector/NativeDetector.h"
-#include <android/log.h>
-
-#define TAG "NativeDetector"
-#define LOGI(...) __android_log_print(ANDROID_LOG_INFO, TAG, __VA_ARGS__)
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, TAG, __VA_ARGS__)
+#include "../../inc/detector/VirtualDetector.h"
+#include "../../inc/utils/LogUtils.h"
 
 NativeDetector* NativeDetector::instance = nullptr;
 
-NativeDetector::NativeDetector() : detectThread(nullptr), isRunning(false), globalCallback(nullptr), javaVM(nullptr) {}
+NativeDetector::NativeDetector() : javaVM(nullptr), globalCallback(nullptr) {
+    initDetectors();
+}
 
 NativeDetector::~NativeDetector() {
-    stopDetect();
+    cleanup();
+}
+
+void NativeDetector::initDetectors() {
+    detectors.push_back(std::make_unique<VirtualDetector>());
+    // 可以添加其他检测器
 }
 
 NativeDetector* NativeDetector::getInstance() {
@@ -21,58 +25,14 @@ NativeDetector* NativeDetector::getInstance() {
 }
 
 void NativeDetector::startDetect(JNIEnv* env, jobject callback) {
-    if (isRunning) {
+    if (javaVM != nullptr) {
         return;
     }
 
-    // 保存JavaVM用于后续获取JNIEnv
     env->GetJavaVM(&javaVM);
-
-    // 创建全局回调引用
     globalCallback = env->NewGlobalRef(callback);
 
-    isRunning = true;
-    detectThread = new std::thread(&NativeDetector::detectLoop, this);
-}
-
-void NativeDetector::stopDetect() {
-    if (!isRunning) {
-        return;
-    }
-
-    isRunning = false;
-    if (detectThread && detectThread->joinable()) {
-        detectThread->join();
-        delete detectThread;
-        detectThread = nullptr;
-    }
-
-    // 清理全局引用
-    if (globalCallback) {
-        JNIEnv* env = getEnv();
-        if (env) {
-            env->DeleteGlobalRef(globalCallback);
-            globalCallback = nullptr;
-        }
-    }
-}
-
-void NativeDetector::detectLoop() {
-    while (isRunning) {
-        JNIEnv* env = getEnv();
-        if (!env) {
-            continue;
-        }
-
-        // TODO: 在这里实现具体的检测逻辑
-        // 例如：检测maps文件、检测挂载点等
-
-        // 示例：发现异常时报告
-        // reportWarning(env, "nativeCheck", "high", "发现异常: xxx");
-
-        // 休眠一段时间再继续检测
-        sleep(5);
-    }
+    detect();
 }
 
 JNIEnv* NativeDetector::getEnv() {
@@ -93,21 +53,31 @@ JNIEnv* NativeDetector::getEnv() {
     return env;
 }
 
-void NativeDetector::reportWarning(JNIEnv* env, const std::string& type, const std::string& level, const std::string& detail) {
-    // 查找回调类和方法
-    jclass callbackClass = env->GetObjectClass(globalCallback);
-    jmethodID reportMethod = env->GetMethodID(callbackClass, "onDetectWarning",
-                                              "(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V");
-
-    if (reportMethod) {
-        jstring jType = env->NewStringUTF(type.c_str());
-        jstring jLevel = env->NewStringUTF(level.c_str());
-        jstring jDetail = env->NewStringUTF(detail.c_str());
-
-        env->CallVoidMethod(globalCallback, reportMethod, jType, jLevel, jDetail);
-
-        env->DeleteLocalRef(jType);
-        env->DeleteLocalRef(jLevel);
-        env->DeleteLocalRef(jDetail);
+void NativeDetector::detect() {
+    JNIEnv* env = getEnv();
+    if (!env) {
+        LOGE("Failed to get JNIEnv");
+        return;
     }
+
+    try {
+        for (const auto& detector : detectors) {
+            detector->detect(env, globalCallback);
+        }
+    } catch (const std::exception& e) {
+        LOGE("Error during detection: %s", e.what());
+    }
+}
+
+void NativeDetector::cleanup() {
+    if (javaVM && globalCallback) {
+        JNIEnv* env = getEnv();
+        if (env) {
+            env->DeleteGlobalRef(globalCallback);
+        }
+    }
+
+    javaVM = nullptr;
+    globalCallback = nullptr;
+    detectors.clear();
 }

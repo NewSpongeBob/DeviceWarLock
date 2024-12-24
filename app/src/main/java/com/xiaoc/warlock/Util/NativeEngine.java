@@ -19,5 +19,5 @@ public class NativeEngine {
     public static native void startCollect(CollectCallback callback);
     public static native String getCollectedInfo();
     public static native void startDetect(DetectCallback callback);
-    public static native void stopDetect();
+    public static native void stopDetect();  // 这个方法现在会调用cleanup
 }

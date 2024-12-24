@@ -43,4 +43,7 @@ namespace utils {
         }
         return result;
     }
+    bool StringUtils::contains(const std::string& str, const std::string& substr) {
+        return str.find(substr) != std::string::npos;
+    }
 }
