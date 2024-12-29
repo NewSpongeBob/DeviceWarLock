@@ -53,6 +53,8 @@ set(SOURCE_FILES
         src/detector/VirtualDetector.cpp
         src/utils/MiscUtil.cpp
         src/utils/DetectorUtils.cpp
+        src/detector/FridaDetector.cpp
+        src/detector/MiscDetector.cpp
         ${syscall}
 )
 

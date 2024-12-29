@@ -12,13 +12,15 @@
 #include "allheader.h"
 #include "../utils/StringUtils.h"
 #include "../utils/DetectorUtils.h"
-
+#include <sys/system_properties.h>
 
 class VirtualDetector : public IDetector {
 public:
     void detect(JNIEnv* env, jobject callback) override;
 
 private:
+    static const std::string CHECK_BRAND_SERVICES;
+
     static const std::string CHECK_VIRTUAL;
     static const std::string CHECK_THERMAL;
     static const std::string CHECK_PROCESS;
@@ -32,6 +34,11 @@ private:
     void detectThermal(JNIEnv* env, jobject callback);  // 新增温度检测方法
     int check_thermal_zones();  // 新增温度区检测方法
     void detectProcess(JNIEnv* env, jobject callback);  // 新增进程检测方法
+    void detectBrandServices(JNIEnv* env, jobject callback);
+    void checkServices(const char* services[], size_t count,
+                       std::string& missingServices, bool& isAbnormal);
+    bool checkServiceExists(const char* serviceName);
+    std::string getServiceList();
 
 };
 

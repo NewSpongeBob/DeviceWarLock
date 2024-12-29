@@ -46,4 +46,93 @@ namespace utils {
     bool StringUtils::contains(const std::string& str, const std::string& substr) {
         return str.find(substr) != std::string::npos;
     }
+    bool StringUtils::containsManual(const char* str, const char* pattern) {
+        if (!str || !pattern) return false;
+
+        const char* s = str;
+        while (*s) {
+            const char* p = pattern;
+            const char* current = s;
+
+            while (*p && *current && *p == *current) {
+                p++;
+                current++;
+            }
+
+            if (!*p) return true;
+            s++;
+        }
+        return false;
+    }
+
+    bool StringUtils::containsBM(const char* text, const char* pattern) {
+        if (!text || !pattern) return false;
+
+        int textLen = strlen(text);
+        int patternLen = strlen(pattern);
+
+        if (patternLen == 0) return false;
+
+        int skip[256] = {0};
+        for (int i = 0; i < 256; i++) {
+            skip[i] = patternLen;
+        }
+        for (int i = 0; i < patternLen - 1; i++) {
+            skip[static_cast<unsigned char>(pattern[i])] = patternLen - 1 - i;
+        }
+
+        int i = patternLen - 1;
+        while (i < textLen) {
+            int j = patternLen - 1;
+            int k = i;
+
+            while (j >= 0 && text[k] == pattern[j]) {
+                j--;
+                k--;
+            }
+
+            if (j < 0) return true;
+
+            i += skip[static_cast<unsigned char>(text[i])];
+        }
+        return false;
+    }
+
+    bool StringUtils::containsBytes(const char* str, const char* pattern) {
+        if (!str || !pattern) return false;
+
+        size_t patternLen = strlen(pattern);
+        size_t strLen = strlen(str);
+
+        if (patternLen > strLen) return false;
+
+        for (size_t i = 0; i <= strLen - patternLen; i++) {
+            bool found = true;
+            for (size_t j = 0; j < patternLen; j++) {
+                if (str[i + j] != pattern[j]) {
+                    found = false;
+                    break;
+                }
+            }
+            if (found) return true;
+        }
+        return false;
+    }
+
+    bool StringUtils::containsSafe(const std::string& text, const std::string& pattern) {
+        if (pattern.empty() || text.empty()) return false;
+
+        const char* textCStr = text.c_str();
+        const char* patternCStr = pattern.c_str();
+
+        // 使用多种方法检测
+        bool result1 = contains(text, pattern);           // 标准方法
+        bool result2 = containsManual(textCStr, patternCStr);    // 手动查找
+        bool result3 = containsBM(textCStr, patternCStr);        // Boyer-Moore
+        bool result4 = containsBytes(textCStr, patternCStr);     // 字节比较
+
+        // 至少两种方法检测到才认为是真实存在
+        int count = result1 + result2 + result3 + result4;
+        return count >= 2;
+    }
 }

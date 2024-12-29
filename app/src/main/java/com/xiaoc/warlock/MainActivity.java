@@ -7,6 +7,7 @@ import android.os.Bundle;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.xiaoc.warlock.Core.CollectCallback;
+import com.xiaoc.warlock.Core.EnvironmentDetector;
 import com.xiaoc.warlock.Core.Warlock;
 
 import com.xiaoc.warlock.Util.API;
@@ -134,6 +135,6 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
     private void cleanup() {
         javaCollectComplete = false;
         nativeCollectComplete = false;
-        // 可以添加其他清理工作
+
     }
 }

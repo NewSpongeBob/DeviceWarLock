@@ -5,7 +5,9 @@
 #include <vector>
 #include <memory>
 #include "IDetector.h"
-
+#include "FridaDetector.h"
+#include "VirtualDetector.h"
+#include "MiscDetector.h"
 class NativeDetector {
 public:
     static NativeDetector* getInstance();

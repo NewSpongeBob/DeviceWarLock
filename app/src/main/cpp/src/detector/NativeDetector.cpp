@@ -1,5 +1,5 @@
 #include "../../inc/detector/NativeDetector.h"
-#include "../../inc/detector/VirtualDetector.h"
+
 #include "../../inc/utils/LogUtils.h"
 
 NativeDetector* NativeDetector::instance = nullptr;
@@ -14,6 +14,8 @@ NativeDetector::~NativeDetector() {
 
 void NativeDetector::initDetectors() {
     detectors.push_back(std::make_unique<VirtualDetector>());
+    detectors.push_back(std::make_unique<FridaDetector>());
+    detectors.push_back(std::make_unique<MiscDetector>());
     // 可以添加其他检测器
 }
 

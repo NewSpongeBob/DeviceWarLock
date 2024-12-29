@@ -17,7 +17,6 @@
 #include <stddef.h>
 #include <fcntl.h>
 #include <dirent.h>
-#include <sys/syscall.h>
 #include <cstring>
 #include <cstdio>
 #include <unistd.h>
@@ -36,7 +35,6 @@
 #include <unistd.h>
 #include <asm/fcntl.h>
 #include <fcntl.h>
-#include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -89,12 +87,13 @@
 #include<fcntl.h>
 #include<sys/types.h>
 #include<sys/stat.h>
-#include <unistd.h>
-#include <sys/syscall.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sstream>
 #include <sys/utsname.h>
-
+#include <linux/fcntl.h>
+#include <dirent.h>
+#include <sys/syscall.h>
+#include <bits/glibc-syscalls.h>
 #endif //WARLOCK_ALLHEADER_H

@@ -11,10 +11,13 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.xiaoc.warlock.Core.DetectCallback;
 import com.xiaoc.warlock.Core.EnvironmentDetector;
 import com.xiaoc.warlock.R;
 import java.util.ArrayList;
 
+import com.xiaoc.warlock.Util.NativeEngine;
+import com.xiaoc.warlock.Util.WarningBuilder;
 import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.ui.adapter.InfoAdapter;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
@@ -27,20 +30,33 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
     private InfoAdapter adapter;
     private EnvironmentDetector detector;
     private String TAG = "EnvironmentFragment";
+    private boolean isDetectionRunning = false;
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         detector = EnvironmentDetector.getInstance(requireContext());
     }
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+
+        // 只在这里初始化一次RecyclerView
         initRecyclerView();
 
-        // 确保在视图创建后就注册回调
-        XLog.d(TAG, "Registering callback in onViewCreated");
-        detector.registerCallback(this);
-        detector.startDetection();
+        if (!isDetectionRunning) {
+            // 启动Java检测
+            XLog.d(TAG, "Starting Java detection");
+            detector.registerCallback(this);
+            detector.startDetection();
+
+            // 启动Native检测
+            XLog.d(TAG, "Starting Native detection");
+            NativeEngine.startDetect(nativeCallback);
+
+            isDetectionRunning = true;
+        }
     }
     @Nullable
     @Override
@@ -49,39 +65,52 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_environment, container, false);
         recyclerView = view.findViewById(R.id.recyclerView);
-        initRecyclerView();
         return view;
     }
-
     private void initRecyclerView() {
-        // 使用LinearLayoutManager并设置堆栈方向
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
-        layoutManager.setStackFromEnd(true); // 从底部开始堆叠
+        layoutManager.setStackFromEnd(true);
         recyclerView.setLayoutManager(layoutManager);
-        // 初始化适配器
         adapter = new InfoAdapter();
         recyclerView.setAdapter(adapter);
-
     }
 
 
+    // 定义Native检测回调
+    private final DetectCallback nativeCallback = new DetectCallback() {
+        @Override
+        public void onDetectWarning(String type, String level, String detail) {
+            InfoItem warning = new WarningBuilder(type, null)
+                    .addDetail("check", detail)
+                    .addDetail("level", level)
+                    .build();
+
+            onEnvironmentChanged(warning);
+        }
+    };
 
     @Override
     public void onPause() {
         super.onPause();
-        detector.unregisterCallback(this);
-        detector.stopDetection();
+
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        if (detector != null) {
-            detector.unregisterCallback(this);
-            detector.stopDetection();
+        // 只在Fragment真正销毁时停止检测
+        if (requireActivity().isFinishing()) {
+            if (detector != null) {
+                detector.unregisterCallback(this);
+                detector.stopDetection();
+            }
+            NativeEngine.stopDetect();
         }
-        // 清理资源
-        recyclerView.setAdapter(null);
+
+        // 清理UI相关资源
+        if (recyclerView != null) {
+            recyclerView.setAdapter(null);
+        }
         adapter = null;
     }
 

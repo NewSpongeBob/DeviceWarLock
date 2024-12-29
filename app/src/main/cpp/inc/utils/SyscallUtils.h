@@ -3,7 +3,7 @@
 #define WARLOCK_SYSCALLUTILS_H
 
 #include <sys/syscall.h>
-
+#include "allheader.h"
 namespace utils {
     class SyscallUtils {
     public:
