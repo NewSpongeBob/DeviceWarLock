@@ -3,7 +3,11 @@ package com.xiaoc.warlock;
 import android.content.Context;
 import android.os.Build;
 import android.os.Bundle;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.xiaoc.warlock.Core.CollectCallback;
@@ -137,4 +141,6 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
         nativeCollectComplete = false;
 
     }
+
+
 }

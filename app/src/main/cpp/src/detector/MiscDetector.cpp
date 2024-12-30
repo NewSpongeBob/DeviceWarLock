@@ -100,17 +100,27 @@ void* MiscDetector::threadFunction(void* arg) {
 }
 
 void MiscDetector::detectPathExistence(JNIEnv* env) {
+    jobject contextObj = nullptr;
+    jobject fileObj = nullptr;
+    jstring pathStr = nullptr;
+    const char* path = nullptr;
+
     try {
-        // 获取应用的files目录路径
+        // 获取Context
+        jclass callbackClass = env->GetObjectClass(globalCallback);
+        jmethodID getContextMethod = env->GetMethodID(callbackClass, "getContext", "()Landroid/content/Context;");
+        contextObj = env->CallObjectMethod(globalCallback, getContextMethod);
+
+        // 获取文件路径
         jclass contextClass = env->FindClass("android/content/Context");
         jmethodID getFilesDir = env->GetMethodID(contextClass, "getFilesDir", "()Ljava/io/File;");
-        jobject fileObj = env->CallObjectMethod(globalCallback, getFilesDir);
+        fileObj = env->CallObjectMethod(contextObj, getFilesDir);
 
         jclass fileClass = env->FindClass("java/io/File");
         jmethodID getAbsolutePath = env->GetMethodID(fileClass, "getAbsolutePath", "()Ljava/lang/String;");
-        jstring pathStr = (jstring)env->CallObjectMethod(fileObj, getAbsolutePath);
+        pathStr = (jstring)env->CallObjectMethod(fileObj, getAbsolutePath);
 
-        const char* path = env->GetStringUTFChars(pathStr, nullptr);
+        path = env->GetStringUTFChars(pathStr, nullptr);
 
         // 使用SyscallUtils进行检测
 #if defined(__aarch64__)

@@ -6,44 +6,66 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/white"
-    android:fitsSystemWindows="false">  <!-- 修改这里 -->
+    android:fitsSystemWindows="false">
 
     <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/primary_color"
-        android:fitsSystemWindows="false">  <!-- 修改这里 -->
+        android:fitsSystemWindows="false">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:layout_marginTop="20dp">  <!-- 添加顶部边距，用于状态栏 -->
+            android:layout_marginTop="20dp">
 
-            <LinearLayout
+            <!-- 修改这里：使用 RelativeLayout 来实现标题和菜单按钮的布局 -->
+            <RelativeLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
                 android:paddingHorizontal="16dp"
                 android:paddingTop="6dp"
                 android:paddingBottom="4dp">
 
-                <TextView
+                <!-- 标题部分 -->
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="WarLock"
-                    android:textColor="@color/white"
-                    android:textSize="20sp"
-                    android:textStyle="bold"/>
+                    android:orientation="vertical"
+                    android:layout_alignParentStart="true"
+                    android:layout_centerVertical="true">
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Version 1.0.0"
-                    android:textColor="#E0FFFFFF"
-                    android:textSize="11sp"
-                    android:layout_marginTop="1dp"/>
-            </LinearLayout>
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="WarLock"
+                        android:textColor="@color/white"
+                        android:textSize="20sp"
+                        android:textStyle="bold"/>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Version 1.0.0"
+                        android:textColor="#E0FFFFFF"
+                        android:textSize="11sp"
+                        android:layout_marginTop="1dp"/>
+                </LinearLayout>
+
+                <!-- 菜单按钮 -->
+                <ImageButton
+                    android:id="@+id/menuButton"
+                    android:layout_width="48dp"
+                    android:layout_height="48dp"
+                    android:layout_alignParentEnd="true"
+                    android:layout_centerVertical="true"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:src="@drawable/ic_more_vert"
+                    android:contentDescription="更多选项"
+                    android:tint="@color/white"/>
+
+            </RelativeLayout>
 
             <com.google.android.material.tabs.TabLayout
                 android:id="@+id/tabLayout"

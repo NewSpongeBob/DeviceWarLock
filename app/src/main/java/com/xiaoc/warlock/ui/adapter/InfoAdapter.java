@@ -1,5 +1,6 @@
 package com.xiaoc.warlock.ui.adapter;
 
+import android.graphics.Color;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -12,14 +13,71 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.card.MaterialCardView;
 import com.xiaoc.warlock.R;
+import com.xiaoc.warlock.Util.ClipboardUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class InfoAdapter extends RecyclerView.Adapter<InfoAdapter.ViewHolder> {
+public class InfoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
     private final List<InfoItem> items = new ArrayList<>();
+    private final boolean isEnvironmentInfo;
+    private static final int TYPE_NORMAL = 0;
+    private static final int TYPE_EMPTY = 1;
 
-    public class ViewHolder extends RecyclerView.ViewHolder {
+    public InfoAdapter(boolean isEnvironmentInfo) {
+        this.isEnvironmentInfo = isEnvironmentInfo;
+    }
+
+    @NonNull
+    @Override
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (isEnvironmentInfo && viewType == TYPE_EMPTY) {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_empty_state, parent, false);
+            return new EmptyViewHolder(view);
+        }
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_info_card, parent, false);
+        return new InfoViewHolder(view);
+    }
+
+    @Override
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        if (holder instanceof EmptyViewHolder && isEnvironmentInfo) {
+            ((EmptyViewHolder) holder).bind();
+        } else if (holder instanceof InfoViewHolder) {
+            ((InfoViewHolder) holder).bind(items.get(position), isEnvironmentInfo);
+        }
+    }
+
+    @Override
+    public int getItemCount() {
+        return isEnvironmentInfo && items.isEmpty() ? 1 : items.size();
+    }
+
+    @Override
+    public int getItemViewType(int position) {
+        return (isEnvironmentInfo && items.isEmpty()) ? TYPE_EMPTY : TYPE_NORMAL;
+    }
+
+    public void addItem(InfoItem item) {
+        boolean wasEmpty = items.isEmpty();
+        items.add(item);
+
+        if (wasEmpty && isEnvironmentInfo) {
+            notifyDataSetChanged();
+        } else {
+            notifyItemInserted(items.size() - 1);
+        }
+    }
+
+    public void setItems(List<InfoItem> newItems) {
+        items.clear();
+        items.addAll(newItems);
+        notifyDataSetChanged();
+    }
+
+    static class InfoViewHolder extends RecyclerView.ViewHolder {
         private final MaterialCardView cardView;
         private final TextView titleText;
         private final ImageView expandIcon;
@@ -27,7 +85,7 @@ public class InfoAdapter extends RecyclerView.Adapter<InfoAdapter.ViewHolder> {
         private final View detailsLayout;
         private final LinearLayout detailsList;
 
-        public ViewHolder(View view) {
+        InfoViewHolder(View view) {
             super(view);
             cardView = (MaterialCardView) view;
             titleText = view.findViewById(R.id.titleText);
@@ -36,59 +94,61 @@ public class InfoAdapter extends RecyclerView.Adapter<InfoAdapter.ViewHolder> {
             detailsLayout = view.findViewById(R.id.detailsLayout);
             detailsList = view.findViewById(R.id.detailsList);
         }
-    }
 
-    @Override
-    public ViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_info_card, parent, false);
-        return new ViewHolder(view);
-    }
+        void bind(InfoItem item, boolean isEnvironmentInfo) {
+            titleText.setText(item.getTitle());
 
-    @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
-        InfoItem item = items.get(position);
+            detailsLayout.setVisibility(item.isExpanded() ? View.VISIBLE : View.GONE);
+            expandIcon.setRotation(item.isExpanded() ? 180 : 0);
 
-        holder.titleText.setText(item.getTitle());
+            headerLayout.setOnClickListener(v -> {
+                item.setExpanded(!item.isExpanded());
+                detailsLayout.setVisibility(item.isExpanded() ? View.VISIBLE : View.GONE);
+                expandIcon.animate().rotation(item.isExpanded() ? 180 : 0).setDuration(200).start();
+            });
 
-        // 设置展开/收起状态
-        holder.detailsLayout.setVisibility(item.isExpanded() ? View.VISIBLE : View.GONE);
-        holder.expandIcon.setRotation(item.isExpanded() ? 180 : 0);
+            detailsList.removeAllViews();
+            for (InfoItem.DetailItem detail : item.getDetails()) {
+                View detailView = LayoutInflater.from(detailsList.getContext())
+                        .inflate(R.layout.item_detail, detailsList, false);
 
-        // 点击事件
-        holder.headerLayout.setOnClickListener(v -> {
-            item.setExpanded(!item.isExpanded());
-            notifyItemChanged(position);
-        });
+                TextView keyText = detailView.findViewById(R.id.keyText);
+                TextView valueText = detailView.findViewById(R.id.valueText);
 
-        // 填充详情列表
-        holder.detailsList.removeAllViews();
-        for (InfoItem.DetailItem detail : item.getDetails()) {
-            View detailView = LayoutInflater.from(holder.detailsList.getContext())
-                    .inflate(R.layout.item_detail, holder.detailsList, false);
+                keyText.setText(detail.getKey());
+                valueText.setText(detail.getValue());
 
-            TextView keyText = detailView.findViewById(R.id.keyText);
-            TextView valueText = detailView.findViewById(R.id.valueText);
+                detailsList.addView(detailView);
+            }
 
-            keyText.setText(detail.getKey());
-            valueText.setText(detail.getValue());
+            cardView.setOnLongClickListener(v -> {
+                ClipboardUtil.copyInfoItemToClipboard(v.getContext(), item, isEnvironmentInfo);
+                return true;
+            });
 
-            holder.detailsList.addView(detailView);
+            cardView.setClickable(true);
+            cardView.setFocusable(true);
+            cardView.setRippleColorResource(R.color.ripple_color);
         }
     }
 
-    public void addItem(InfoItem item) {
-        items.add(item);
-        notifyItemInserted(items.size() - 1);
-    }
-    public void setItems(List<InfoItem> newItems) {
-        items.clear();
-        items.addAll(newItems);
-        notifyDataSetChanged();
-    }
+    static class EmptyViewHolder extends RecyclerView.ViewHolder {
+        private final ImageView emptyStateIcon;
+        private final TextView emptyStateTitle;
+        private final TextView emptyStateDescription;
 
-    @Override
-    public int getItemCount() {
-        return items.size();
+        EmptyViewHolder(@NonNull View itemView) {
+            super(itemView);
+            emptyStateIcon = itemView.findViewById(R.id.emptyStateIcon);
+            emptyStateTitle = itemView.findViewById(R.id.emptyStateTitle);
+            emptyStateDescription = itemView.findViewById(R.id.emptyStateDescription);
+        }
+
+        void bind() {
+            emptyStateIcon.setImageResource(R.drawable.ic_security);
+            emptyStateIcon.setColorFilter(Color.parseColor("#4CAF50"));
+            emptyStateTitle.setText("环境安全");
+            emptyStateDescription.setText("未检测到任何安全风险\n您的设备环境运行正常");
+        }
     }
 }

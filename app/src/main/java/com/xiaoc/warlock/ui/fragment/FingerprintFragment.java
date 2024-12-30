@@ -2,9 +2,15 @@ package com.xiaoc.warlock.ui.fragment;
 
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
+import android.widget.Toast;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -13,6 +19,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.xiaoc.warlock.Core.EnvironmentDetector;
 import com.xiaoc.warlock.R;
+import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.ui.adapter.InfoAdapter;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
 
@@ -22,36 +29,85 @@ import java.util.List;
 public class FingerprintFragment extends Fragment {
     private RecyclerView recyclerView;
     private InfoAdapter adapter;
-    private boolean isInitialized = false;
+    private TextView loadingText;
+    private Handler loadingHandler;
+    private int dotCount = 0;
+    private static final int UPDATE_LOADING_TEXT = 1;
+    private final List<InfoItem> pendingWarnings = new ArrayList<>();
+    private boolean isCollecting = false;
+    private static final String TAG = "FingerprintFragment";
 
-    @Nullable
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        loadingHandler = new Handler(Looper.getMainLooper()) {
+            @Override
+            public void handleMessage(@NonNull Message msg) {
+                if (msg.what == UPDATE_LOADING_TEXT && loadingText != null) {
+                    updateLoadingText();
+                    sendEmptyMessageDelayed(UPDATE_LOADING_TEXT, 500);
+                }
+            }
+        };
+    }
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_fingerprint, container, false);
         recyclerView = view.findViewById(R.id.recyclerView);
+        loadingText = view.findViewById(R.id.loadingText);
         return view;
     }
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
-        // 只初始化一次
-        if (!isInitialized) {
-            initRecyclerView();
-            isInitialized = true;
-        }
+        initRecyclerView();
+        loadDeviceInfo();
+//        if (!isCollecting) {
+//            showLoading(true);
+//            startCollection();
+//        }
     }
 
     private void initRecyclerView() {
-        if (getContext() == null) return;
-
-        recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
-        adapter = new InfoAdapter();
+        LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());
+        recyclerView.setLayoutManager(layoutManager);
+        adapter = new InfoAdapter(false);
         recyclerView.setAdapter(adapter);
+    }
 
-        loadDeviceInfo();
+
+    private void startCollection() {
+        if (isCollecting) return;
+        isCollecting = true;
+
+        // TODO: 实现实际的设备指纹收集逻辑
+        XLog.d(TAG, "Starting fingerprint collection");
+    }
+
+    private void updateLoadingText() {
+        dotCount = (dotCount + 1) % 4;
+        StringBuilder dots = new StringBuilder();
+        for (int i = 0; i < dotCount; i++) {
+            dots.append(" .");
+        }
+        loadingText.setText("collecting fingerprint ing" + dots);
+    }
+
+    private void showLoading(boolean show) {
+        if (loadingText != null) {
+            loadingText.setVisibility(show ? View.VISIBLE : View.GONE);
+            recyclerView.setVisibility(show ? View.GONE : View.VISIBLE);
+
+            if (show) {
+                dotCount = 0;
+                loadingHandler.sendEmptyMessage(UPDATE_LOADING_TEXT);
+            } else {
+                loadingHandler.removeMessages(UPDATE_LOADING_TEXT);
+            }
+        }
     }
 
     private void loadDeviceInfo() {
@@ -79,14 +135,34 @@ public class FingerprintFragment extends Fragment {
             e.printStackTrace();
         }
     }
+    // 这个方法将来用于接收设备指纹收集结果
+    public void onFingerprintCollected(InfoItem newItem) {
+        requireActivity().runOnUiThread(() -> {
+            if (adapter != null && isAdded()) {
+                showLoading(false);
+                adapter.addItem(newItem);
+                recyclerView.smoothScrollToPosition(0);
+                XLog.d(TAG, "Added fingerprint item: " + newItem.getTitle());
+            }
+        });
+    }
+
+    private void showError(String message) {
+        if (getContext() != null) {
+            Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+        }
+    }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
-        // 清理资源
+        if (loadingHandler != null) {
+            loadingHandler.removeCallbacksAndMessages(null);
+        }
         if (recyclerView != null) {
             recyclerView.setAdapter(null);
         }
         adapter = null;
+        isCollecting = false;
     }
 }

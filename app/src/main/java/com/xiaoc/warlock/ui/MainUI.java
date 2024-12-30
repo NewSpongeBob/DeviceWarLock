@@ -2,17 +2,31 @@ package com.xiaoc.warlock.ui;
 
 import android.graphics.Color;
 import android.os.Build;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
 import android.view.WindowManager;
+import android.widget.ImageButton;
+import android.widget.Toast;
 
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.view.menu.MenuBuilder;
+import androidx.appcompat.widget.PopupMenu;
 import androidx.viewpager2.widget.ViewPager2;
 import androidx.fragment.app.FragmentActivity;
+
+import com.google.android.material.appbar.MaterialToolbar;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.xiaoc.warlock.R;
 import com.xiaoc.warlock.ui.adapter.ViewPagerAdapter;
+
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 public class MainUI {
     private final FragmentActivity activity;
@@ -28,6 +42,9 @@ public class MainUI {
     private void initUI() {
         // 设置布局
         activity.setContentView(R.layout.activity_main);
+        // 设置 Toolbar
+        ImageButton menuButton = activity.findViewById(R.id.menuButton);
+        menuButton.setOnClickListener(v -> showBottomSheetMenu());
 
         // 初始化视图
         viewPager = activity.findViewById(R.id.viewPager);
@@ -36,6 +53,9 @@ public class MainUI {
         // 设置适配器
         pagerAdapter = new ViewPagerAdapter(activity);
         viewPager.setAdapter(pagerAdapter);
+
+        // 设置离屏页面限制
+        viewPager.setOffscreenPageLimit(1);
 
         // 添加页面切换监听
         viewPager.registerOnPageChangeCallback(new ViewPager2.OnPageChangeCallback() {
@@ -48,7 +68,6 @@ public class MainUI {
 
         // 设置TabLayout和ViewPager2关联
         new TabLayoutMediator(tabLayout, viewPager, (tab, position) -> {
-            // 使用字符串资源
             String[] titles = new String[]{"设备指纹", "环境检测"};
             tab.setText(titles[position]);
         }).attach();
@@ -87,4 +106,26 @@ public class MainUI {
         viewPager.setPageTransformer(transformer);
     }
 
+    public void showBottomSheetMenu() {
+        BottomSheetDialog dialog = new BottomSheetDialog(activity);
+        View view = activity.getLayoutInflater().inflate(R.layout.layout_menu_sheet, null);
+
+        view.findViewById(R.id.btn_about).setOnClickListener(v -> {
+            Toast.makeText(activity, "关于", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        view.findViewById(R.id.btn_feedback).setOnClickListener(v -> {
+            Toast.makeText(activity, "反馈", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        view.findViewById(R.id.btn_settings).setOnClickListener(v -> {
+            Toast.makeText(activity, "设置", Toast.LENGTH_SHORT).show();
+            dialog.dismiss();
+        });
+
+        dialog.setContentView(view);
+        dialog.show();
+    }
 }
