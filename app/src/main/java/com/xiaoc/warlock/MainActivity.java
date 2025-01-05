@@ -10,6 +10,7 @@ import android.view.View;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.tencent.bugly.crashreport.CrashReport;
 import com.xiaoc.warlock.Core.CollectCallback;
 import com.xiaoc.warlock.Core.EnvironmentDetector;
 import com.xiaoc.warlock.Core.Warlock;
@@ -25,7 +26,7 @@ import org.json.JSONObject;
 import org.lsposed.hiddenapibypass.HiddenApiBypass;
 
 import java.util.Map;
-
+import com.xiaoc.warlock.crypto.EncryptUtil;
 public class MainActivity extends AppCompatActivity implements CollectCallback {
     private static final String TAG = "MainActivity";
     private Context context;
@@ -36,8 +37,10 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        //CrashReport.initCrashReport(getApplicationContext(), "56552ffeab", false);
         initEnvironment();
         startCollect();
+
     }
 
     private void initEnvironment() {
@@ -98,7 +101,7 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
             combined.put("native_fingerprints", new JSONObject(NativeEngine.getCollectedInfo()));
 
             String combinedJson = combined.toString(4);  // 使用4空格缩进
-            XLog.d(TAG, "Combined fingerprint result: " + combinedJson);
+            //XLog.d(TAG, "Combined fingerprint result: " + combinedJson);
             saveToFile("combined_fingerprint.txt", combinedJson);
         } catch (Exception e) {
             XLog.e(TAG, "Error combining results: " + e.getMessage());
@@ -106,8 +109,9 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
     }
     private void saveJavaResults() {
         String javaJson = Xson.getMapString(true);
-        XLog.d(TAG, "Java fingerprint result: " + javaJson);
-        saveToFile("java_fingerprint.txt", javaJson);
+       // XLog.d(TAG, "Java fingerprint result: " + javaJson);
+        EncryptUtil encryptUtil = new EncryptUtil(javaJson);
+        saveToFile("java_fingerprint.txt", encryptUtil.result);
     }
 
     private void saveNativeResults() {

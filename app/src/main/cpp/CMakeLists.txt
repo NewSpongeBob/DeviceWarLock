@@ -33,29 +33,21 @@ include_directories(
         inc/netlink/
         inc/detector/
 )
+file(GLOB CRYPTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/crypto/*.cpp")
+file(GLOB UTILS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/*.cpp")
+file(GLOB DETECTOR_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/detector/*.cpp")
+file(GLOB COLLECTOR_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/collector/*.cpp")
 
 # 主库源文件
 set(SOURCE_FILES
         src/warlockCore.cpp
-        src/collector/NativeCollector.cpp
-        src/collector/SystemInfoCollector.cpp
-        src/collector/BasicInfoCollector.cpp
-        src/collector/MiscInfoCollector.cpp
-        src/utils/CommandUtils.cpp
-        src/utils/FileUtils.cpp
-        src/utils/StringUtils.cpp
-        src/utils/SyscallUtils.cpp
-        src/utils/Base64Utils.cpp
-        src/utils/XsonCollector.cpp
         src/netlink/ifaddrs.cpp
         src/netlink/NetlinkConnection.cpp
-        src/detector/NativeDetector.cpp
-        src/detector/VirtualDetector.cpp
-        src/utils/MiscUtil.cpp
-        src/utils/DetectorUtils.cpp
-        src/detector/FridaDetector.cpp
-        src/detector/MiscDetector.cpp
+        ${DETECTOR_SOURCES}
         ${syscall}
+        ${CRYPTO_SOURCES}
+        ${UTILS_SOURCES}
+        ${COLLECTOR_SOURCES}
 )
 
 # 隔离进程库源文件

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- 隐私设置 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="隐私设置"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.switchmaterial.SwitchMaterial
+        android:id="@+id/switch_no_report"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="设备信息不上报服务器"
+        android:checked="false"
+        android:layout_marginBottom="16dp"/>
+
+    <!-- 应用操作 -->
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="应用操作"
+        android:textStyle="bold"
+        android:textSize="16sp"
+        android:layout_marginBottom="8dp"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_restart_app"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="重启应用"
+        android:layout_marginBottom="8dp"
+        style="@style/Widget.MaterialComponents.Button.TextButton"/>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/btn_clear_data"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="清除数据"
+        android:textColor="?attr/colorError"
+        style="@style/Widget.MaterialComponents.Button.TextButton"/>
+
+</LinearLayout> 

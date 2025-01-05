@@ -1,40 +1,35 @@
 package com.xiaoc.warlock.ui;
 
-import android.graphics.Color;
+
 import android.os.Build;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
+
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.ImageButton;
-import android.widget.Toast;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.view.menu.MenuBuilder;
-import androidx.appcompat.widget.PopupMenu;
 import androidx.viewpager2.widget.ViewPager2;
 import androidx.fragment.app.FragmentActivity;
 
-import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+
 import com.google.android.material.tabs.TabLayout;
 import com.google.android.material.tabs.TabLayoutMediator;
 import com.xiaoc.warlock.R;
 import com.xiaoc.warlock.ui.adapter.ViewPagerAdapter;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import com.xiaoc.warlock.ui.dialog.DialogManager;
 
 public class MainUI {
     private final FragmentActivity activity;
     private ViewPager2 viewPager;
     private TabLayout tabLayout;
     private ViewPagerAdapter pagerAdapter;
+    private final DialogManager dialogManager;
+
     public MainUI(FragmentActivity activity) {
         this.activity = activity;
+        this.dialogManager = new DialogManager(activity);
+
         initUI();
         setupStatusBar();
     }
@@ -111,21 +106,27 @@ public class MainUI {
         View view = activity.getLayoutInflater().inflate(R.layout.layout_menu_sheet, null);
 
         view.findViewById(R.id.btn_about).setOnClickListener(v -> {
-            Toast.makeText(activity, "关于", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
+            dialogManager.showAboutDialog();
+        });
+
+        view.findViewById(R.id.btn_explain).setOnClickListener(v -> {
+            dialog.dismiss();
+            dialogManager.showexplainDialog();
         });
 
         view.findViewById(R.id.btn_feedback).setOnClickListener(v -> {
-            Toast.makeText(activity, "反馈", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
+            dialogManager.showFeedbackDialog();
         });
 
         view.findViewById(R.id.btn_settings).setOnClickListener(v -> {
-            Toast.makeText(activity, "设置", Toast.LENGTH_SHORT).show();
             dialog.dismiss();
+            dialogManager.showSettingsDialog();
         });
 
         dialog.setContentView(view);
         dialog.show();
     }
+
 }

@@ -21,7 +21,7 @@ public class AppProvider extends ContentProvider {
     @Override
     public boolean onCreate() {
         startWarLockService();
-        //AppChecker.checkReflectionSupport();
+        AppChecker.checkReflectionSupport();
         return true;
     }
     private void startWarLockService() {

@@ -46,7 +46,7 @@ public class MiscDetector extends BaseDetector {
     private void checkReflectionAvailable(){
         try {
             boolean supported =AppChecker.isReflectionSupported();
-                if (supported){{
+                if (supported && Build.VERSION.SDK_INT >= Build.VERSION_CODES.P){{
                     InfoItem warning = new WarningBuilder("checkHideApi", null)
                             .addDetail("check", String.valueOf(supported))
                             .addDetail("level", "medium")

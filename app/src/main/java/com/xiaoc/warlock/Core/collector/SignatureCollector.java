@@ -28,7 +28,6 @@ public class SignatureCollector extends BaseCollector {
     @Override
     public void collect() {
         getSignatureX509(); //a47
-        getSignatureMD5(); //a48
     }
     private void getSignatureX509(){
         try {
@@ -37,54 +36,33 @@ public class SignatureCollector extends BaseCollector {
                     context.getPackageName(),
                     PackageManager.GET_SIGNATURES
             );
-            String normalSignature = packageInfo.signatures[0].toCharsString();
+            Signature normalSignature = packageInfo.signatures[0];
 
             // 方法2: Binder方式
-            String binderSignature = getAppSignatureForBinder(context);
+            Signature binderSignature = getAppSignatureForBinder(context);
 
             Map<String, Object> signatureInfo = new LinkedHashMap<>();
+            Map<String, Object> md5signatureInfo = new LinkedHashMap<>();
+
             if (normalSignature != null && binderSignature != null) {
                 if (normalSignature.equals(binderSignature)) {
-                    putInfo("a47", normalSignature);
+                    putInfo("a47", normalSignature.toCharsString());
+                    putInfo("a48", getSignatureMD5(normalSignature));
+
                 } else {
                     signatureInfo.put("pm", normalSignature);
                     signatureInfo.put("binder", binderSignature);
                     putInfo("a47", signatureInfo);
+                    md5signatureInfo.put("pm", getSignatureMD5(normalSignature));
+                    md5signatureInfo.put("binder", getSignatureMD5(binderSignature));
+                    putInfo("a48", md5signatureInfo);
                 }
             }
         } catch (Exception e) {
             putFailedInfo("a47");
-
-            XLog.e(TAG, "Failed to collect signature info", e);
-        }
-    }
-    private void getSignatureMD5(){
-        try {
-            // 方法1: 常规PackageManager方式获取签名
-            PackageInfo packageInfo = context.getPackageManager().getPackageInfo(
-                    context.getPackageName(),
-                    PackageManager.GET_SIGNATURES
-            );
-            String normalMD5 = getSignatureMD5(packageInfo.signatures[0]);
-
-            // 方法2: Binder方式获取签名
-            String binderMD5 = getAppSignaturemd5ForBinder(context);
-
-            Map<String, Object> fingerprintInfo = new LinkedHashMap<>();
-
-            if (normalMD5 != null && binderMD5 != null) {
-                if (normalMD5.equals(binderMD5)) {
-                    putInfo("a48", normalMD5);
-                } else {
-                    fingerprintInfo.put("pm", normalMD5);
-                    fingerprintInfo.put("binder", binderMD5);
-                    putInfo("a48", fingerprintInfo);
-                }
-            }
-        } catch (Exception e) {
             putFailedInfo("a48");
 
-            XLog.e(TAG, "Failed to collect signature fingerprint", e);
+            XLog.e(TAG, "Failed to collect signature info", e);
         }
     }
     /**
@@ -109,12 +87,12 @@ public class SignatureCollector extends BaseCollector {
         }
     }
 
+
     /**
-     * 通过Binder获取签名MD5指纹
+     * 通过Binder获取签名信息
      */
-    private  String getAppSignaturemd5ForBinder(Context context) {
-        Signature signature ;
-        String signaturemd5 = "";
+    public static Signature getAppSignatureForBinder(Context context) {
+        Signature signature = null;
         try {
             PackageManager packageManager = context.getPackageManager();
             // 通过反射获取 mPM 字段
@@ -150,58 +128,6 @@ public class SignatureCollector extends BaseCollector {
 
                 if (packageInfo != null && packageInfo.signatures != null && packageInfo.signatures.length > 0) {
                     signature = packageInfo.signatures[0];
-                    signaturemd5 = getSignatureMD5(signature);
-                }
-            } finally {
-                // 回收Parcel
-                data.recycle();
-                reply.recycle();
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return signaturemd5;
-    }
-    /**
-     * 通过Binder获取签名信息
-     */
-    public static String getAppSignatureForBinder(Context context) {
-        String signature = "";
-        try {
-            PackageManager packageManager = context.getPackageManager();
-            // 通过反射获取 mPM 字段
-            Field mPmField = packageManager.getClass().getDeclaredField("mPM");
-            mPmField.setAccessible(true);
-            Object iPackageManager = mPmField.get(packageManager);
-
-            // 获取 mRemote
-            Field mRemoteField = iPackageManager.getClass().getDeclaredField("mRemote");
-            mRemoteField.setAccessible(true);
-            IBinder binder = (IBinder) mRemoteField.get(iPackageManager);
-
-            // 准备Parcel数据
-            Parcel data = Parcel.obtain();
-            Parcel reply = Parcel.obtain();
-
-            try {
-                // 写入接口标识
-                data.writeInterfaceToken("android.content.pm.IPackageManager");
-                // 写入包名
-                data.writeString(context.getPackageName());
-                // 写入获取签名的flag
-                data.writeLong(PackageManager.GET_SIGNATURES);
-                // 写入当前进程uid
-                data.writeInt(Process.myUid());
-
-                // 执行transact调用
-                binder.transact(getTransactionId(), data, reply, 0);
-                // 读取异常信息(如果有)
-                reply.readException();
-                // 读取返回的PackageInfo对象
-                PackageInfo packageInfo = reply.readTypedObject(PackageInfo.CREATOR);
-
-                if (packageInfo != null && packageInfo.signatures != null && packageInfo.signatures.length > 0) {
-                    signature = packageInfo.signatures[0].toCharsString();
                 }
             } finally {
                 // 回收Parcel
