@@ -249,21 +249,6 @@ void MiscInfoCollector::collectDrmId() {
     }
 }
 
-void MiscInfoCollector::collectDirStats() {
-    // 使用常量定义的目录和指纹ID
-    const std::pair<const char*, const char*> dirs[] = {
-        {constants::paths::DIR_SYSTEM, constants::fingerprint::DIR_SYSTEM_ID},
-        {constants::paths::DIR_FIRMWARE, constants::fingerprint::DIR_FIRMWARE_ID},
-        {constants::paths::DIR_BIN, constants::fingerprint::DIR_BIN_ID},
-        {constants::paths::DIR_LIB, constants::fingerprint::DIR_LIB_ID},
-        {constants::paths::DIR_FRAMEWORK, constants::fingerprint::DIR_FRAMEWORK_ID},
-        {constants::paths::DIR_FONTS, constants::fingerprint::DIR_FONTS_ID}
-    };
-
-    for (const auto& dir : dirs) {
-        collectDirInfo(dir.first, dir.second);
-    }
-}
 
 
 void MiscInfoCollector::collect(std::map<std::string, std::string>& info) {
