@@ -20,8 +20,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class StatInfoCollector extends BaseCollector {
-    private String TAG = "StatInfoCollector";
-
+    private static final String TAG = "StatInfoCollector";
 
     public StatInfoCollector(Context context) {
         super(context);
@@ -29,23 +28,91 @@ public class StatInfoCollector extends BaseCollector {
 
     @Override
     public void collect() {
-        collectorStatFIle();
+        collectStorageStats();      // a50
+        collectStatFile();          // a53
+        collectSerialBlacklist();   // a29, a30, a31
+        collectPubkeyBlacklist();   // a32, a33, a34
+        collectKeychainStats();     // a35, a36
+        collectApkPathStats();      // a40
+        collectDownloadPathStats(); // a37
+        collectAndroidPathStats();  // a38
+        collectTmpPathStats();      // a39
+    }
+
+    /**
+     * 收集存储统计信息
+     */
+    private void collectStorageStats() {
+        try {
+            XCommandUtil.CommandResult result = XCommandUtil.execute("stat -f /storage/emulated/0");
+            if (result.isSuccess()) {
+                String output = result.getSuccessMsg();
+                Map<String, Object> storageStats = new LinkedHashMap<>();
+                
+                // 更新正则表达式以匹配实际输出格式
+                Pattern blockSizePattern = Pattern.compile("Block Size: (\\d+)");
+                Pattern totalBlocksPattern = Pattern.compile("Blocks: Total: (\\d+)");
+                Pattern freeBlocksPattern = Pattern.compile("Free: (\\d+)");
+                Pattern availableBlocksPattern = Pattern.compile("Available: (\\d+)");
+                
+                Matcher blockSizeMatcher = blockSizePattern.matcher(output);
+                Matcher totalBlocksMatcher = totalBlocksPattern.matcher(output);
+                Matcher freeBlocksMatcher = freeBlocksPattern.matcher(output);
+                Matcher availableBlocksMatcher = availableBlocksPattern.matcher(output);
+                
+                if (blockSizeMatcher.find() && totalBlocksMatcher.find() && 
+                    freeBlocksMatcher.find() && availableBlocksMatcher.find()) {
+                    
+                    long blockSize = Long.parseLong(blockSizeMatcher.group(1));
+                    long totalBlocks = Long.parseLong(totalBlocksMatcher.group(1));
+                    long freeBlocks = Long.parseLong(freeBlocksMatcher.group(1));
+                    long availableBlocks = Long.parseLong(availableBlocksMatcher.group(1));
+                    
+                    // 构建结果对象
+
+                    Map<String, String> results = new LinkedHashMap<>();
+                    results.put("t", String.valueOf(totalBlocks * blockSize));      // total space
+                    results.put("f", String.valueOf(freeBlocks * blockSize));       // free space
+                    results.put("a", String.valueOf(availableBlocks * blockSize));  // available space
+                    results.put("bs", String.valueOf(blockSize));                   // block size
+                    results.put("s", output);                                       // original output string
+                    
+                    putInfo("a50", results);
+                    
+                    // 调试日志
+                    XLog.d(TAG, "Storage stats collected successfully: " + result);
+                } else {
+                    XLog.e(TAG, "Failed to match storage stats patterns. Output: " + output);
+                    putFailedInfo("a50");
+                }
+            } else {
+                XLog.e(TAG, "Command execution failed: " + result.getErrorMsg());
+                putFailedInfo("a50");
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to collect storage stats: " + e.getMessage());
+            putFailedInfo("a50");
+        }
+    }
+
+    /**
+     * 收集serial黑名单文件统计信息
+     */
+    private void collectSerialBlacklist() {
         try {
             XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.SERIAL_BLACKLIST_FILE);
-            XLog.d("xiaoc666", result.getSuccessMsg());
-
             if (result.isSuccess()) {
                 String output = result.getSuccessMsg();
                 String[] lines = output.split("\n");
 
                 for (String line : lines) {
                     line = line.trim();
-                    if (line.startsWith("Modify:") && line.contains("-")) {
+                    if (line.startsWith("Access:") && line.contains("-")) {
+                        putInfo("a29", extractTimestamp(line));
+                    } else if (line.startsWith("Modify:") && line.contains("-")) {
                         putInfo("a30", extractTimestamp(line));
                     } else if (line.startsWith("Change:") && line.contains("-")) {
                         putInfo("a31", extractTimestamp(line));
-                    }else if (line.startsWith("Access:") && line.contains("-")){
-                        putInfo("a29", extractTimestamp(line));
                     }
                 }
             } else {
@@ -53,198 +120,12 @@ public class StatInfoCollector extends BaseCollector {
                 putFailedInfo("a30");
                 putFailedInfo("a31");
             }
-
         } catch (Exception e) {
-            XLog.e(TAG, "Failed to collect stats: " + e.getMessage());
+            XLog.e(TAG, "Failed to collect serial blacklist stats: " + e.getMessage());
+            putFailedInfo("a29");
             putFailedInfo("a30");
             putFailedInfo("a31");
         }
-        try {
-            // 获取 pubkey_blacklist.txt 的纳秒级时间戳
-            XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.PUBKEY_BLACKLIST_FILE);
-            XLog.d("xiaoc666", result.getSuccessMsg());
-
-            if (result.isSuccess()) {
-                String output = result.getSuccessMsg();
-                String[] lines = output.split("\n");
-                XLog.d("xiaoc666", result.getSuccessMsg());
-                for (String line : lines) {
-                    line = line.trim();
-                    if (line.startsWith("Access:") && line.contains("-")) {  // Access time
-                        putInfo("a33", extractTimestamp(line));
-                    } else if (line.startsWith("Modify:") && line.contains("-")) {  // Modify time
-                        putInfo("a32", extractTimestamp(line));
-                    } else if (line.startsWith("Change:") && line.contains("-")) {  // Change time
-                        putInfo("a34", extractTimestamp(line));
-                    }
-                }
-            } else {
-                putFailedInfo("a32");
-                putFailedInfo("a33");
-                putFailedInfo("a34");
-            }
-
-            // 获取 keychain 目录的访问时间
-
-                result = XCommandUtil.execute("stat " + BuildConfig.KEYCHAIN_DIR);
-                XLog.d("xiaoc666", result.getSuccessMsg());
-
-                if (result.isSuccess()) {
-                    String output = result.getSuccessMsg();
-                    String[] lines = output.split("\n");
-
-                    for (String line : lines) {
-                        line = line.trim();
-                        if (line.startsWith("Access:") && line.contains("-")) {  // Access time
-                            putInfo("a35", extractTimestamp(line));
-                        }  else if (line.startsWith("Change:") && line.contains("-")) {  // Change time
-                            putInfo("a36", extractTimestamp(line));
-                        }
-                    }
-                } else {
-                    putFailedInfo("a35");
-                    putFailedInfo("a36");
-                }
-
-        } catch (Exception e) {
-            putFailedInfo("a32");
-            putFailedInfo("a33");
-            putFailedInfo("a34");
-            putFailedInfo("a35");
-            putFailedInfo("a36");
-            XLog.e(TAG, "Failed to collect keychain stats: " + e.getMessage());
-        }
-        try {
-            XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.APK_PATH);
-            XLog.d("xiaoc666", result.getSuccessMsg() + " | " + result.getErrorMsg());
-
-            // 检查错误输出是否包含 "No such file or directory"
-            if (result.getErrorMsg() != null &&
-                    result.getErrorMsg().contains("No such file or directory")) {
-                putInfo("a40", "false");
-            } else {
-                putInfo("a40", "true");
-            }
-
-        } catch (Exception e) {
-            XLog.e(TAG, "Failed to check Apppackage: " + e.getMessage());
-            putFailedInfo("a40");
-        }
-        try {
-            XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.SDCARD_DOWNLOAD_PATH);
-            XLog.d("xiaoc666", result.getSuccessMsg());
-
-            if (result.isSuccess()) {
-                Map<String, String> timeMap = new LinkedHashMap<>();
-                String output = result.getSuccessMsg();
-                String[] lines = output.split("\n");
-
-                for (String line : lines) {
-                    line = line.trim();
-                    if (line.startsWith("Access:") && line.contains("-")) {
-                        timeMap.put("access", extractTimestamp(line));
-                    } else if (line.startsWith("Change:") && line.contains("-")) {
-                        timeMap.put("change", extractTimestamp(line));
-                    }
-                }
-
-                // 检查是否都获取到了时间戳
-                if (timeMap.containsKey("access") && timeMap.containsKey("change")) {
-                    putInfo("a37", timeMap);
-                } else {
-                    putFailedInfo("a37");
-                }
-            } else {
-                putFailedInfo("a37");
-            }
-
-        } catch (Exception e) {
-            XLog.e(TAG, "Failed to collect download path stats: " + e.getMessage());
-            putFailedInfo("a37");
-        }
-        try {
-            XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.SDCARD_ANDROID_PATH);
-            XLog.d("xiaoc666", result.getSuccessMsg());
-
-            if (result.isSuccess()) {
-                Map<String, String> timeMap = new LinkedHashMap<>();
-                String output = result.getSuccessMsg();
-                String[] lines = output.split("\n");
-
-                for (String line : lines) {
-                    line = line.trim();
-                    if (line.startsWith("Access:") && line.contains("-")) {
-                        timeMap.put("access", extractTimestamp(line));
-                    } else if (line.startsWith("Change:") && line.contains("-")) {
-                        timeMap.put("change", extractTimestamp(line));
-                    }
-                }
-
-                // 检查是否都获取到了时间戳
-                if (timeMap.containsKey("access") && timeMap.containsKey("change")) {
-                    putInfo("a38", timeMap);
-                } else {
-                    putFailedInfo("a38");
-                }
-            } else {
-                putFailedInfo("a38");
-            }
-
-        } catch (Exception e) {
-            XLog.e(TAG, "Failed to collect sdcard android path stats: " + e.getMessage());
-            putFailedInfo("a38");
-        }
-        try {
-            XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.DATA_LOCAL_TMP_PATH);
-            XLog.d("xiaoc666", result.getSuccessMsg());
-
-            if (result.isSuccess()) {
-                Map<String, String> timeMap = new LinkedHashMap<>();
-                String output = result.getSuccessMsg();
-                String[] lines = output.split("\n");
-
-                for (String line : lines) {
-                    line = line.trim();
-                    if (line.startsWith("Access:") && line.contains("-")) {
-                        timeMap.put("access", extractTimestamp(line));
-                    } else if (line.startsWith("Change:") && line.contains("-")) {
-                        timeMap.put("change", extractTimestamp(line));
-                    }
-                }
-
-                // 检查是否都获取到了时间戳
-                if (timeMap.containsKey("access") && timeMap.containsKey("change")) {
-                    putInfo("a39", timeMap);
-                } else {
-                    putFailedInfo("a39");
-                }
-            } else {
-                putFailedInfo("a39");
-            }
-
-        } catch (Exception e) {
-            XLog.e(TAG, "Failed to collect /data/local/tmp path stats: " + e.getMessage());
-            putFailedInfo("a39");
-        }
-        /**
-         * 这个检测还不确定，先留着，这个检测是利用stat的bug，如果stat返回的是权限被拒绝就代表存在这个文件，如果返回的是没有这个文件则代表有这个文件。
-         */
-//        try {
-//            XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.AP_PACKAGE_PATH);
-//            XLog.d("xiaoc666", result.getSuccessMsg() + " | " + result.getErrorMsg());
-//
-//            // 检查错误输出是否包含 "No such file or directory"
-//            if (result.getErrorMsg() != null &&
-//                    result.getErrorMsg().contains("No such file or directory")) {
-//                putInfo("a41", "false");
-//            } else {
-//                putInfo("a41", "true");
-//            }
-//
-//        } catch (Exception e) {
-//            XLog.e("StatInfoCollector", "Failed to check Ap_Package_Path: " + e.getMessage());
-//            putFailedInfo("a40");
-//        }
     }
 
     /**
@@ -277,7 +158,8 @@ public class StatInfoCollector extends BaseCollector {
         }
         return "-1";
     }
-    private  void collectorStatFIle(){
+
+    private void collectStatFile() {
         try {
             Map<String, Map<String, Object>> result = new LinkedHashMap<>();
 
@@ -286,13 +168,7 @@ public class StatInfoCollector extends BaseCollector {
                 String mapping = entry.getValue();
 
                 try {
-
-                    // getFileStatsByReflection是通过反射去stat的，这个获取不到纳米级的时间所以使用命令行的stat方法
-                   //Map<String, Object> stats = getFileStatsByReflection(new File(path));
-
-
-                    Map<String, Object>   stats = getFileStatsByCommand(path);
-
+                    Map<String, Object> stats = getFileStatsByCommand(path);
 
                     if (!stats.isEmpty()) {
                         result.put(mapping, stats);
@@ -307,12 +183,12 @@ public class StatInfoCollector extends BaseCollector {
             } else {
                 putFailedInfo("a53");
             }
-
         } catch (Exception e) {
             XLog.e(TAG, "Failed to collect file stats: " + e.getMessage());
             putFailedInfo("a53");
         }
     }
+
     private Map<String, Object> getFileStatsByReflection(File file) {
         Map<String, Object> stats = new LinkedHashMap<>();
         try {
@@ -383,6 +259,7 @@ public class StatInfoCollector extends BaseCollector {
         }
         return stats;
     }
+
     private Map<String, Object> getFileStatsByCommand(String path) {
         Map<String, Object> stats = new LinkedHashMap<>();
 
@@ -445,5 +322,183 @@ public class StatInfoCollector extends BaseCollector {
         return stats;
     }
 
+    private void collectPubkeyBlacklist() {
+        try {
+            XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.PUBKEY_BLACKLIST_FILE);
+            XLog.d("xiaoc666", result.getSuccessMsg());
 
+            if (result.isSuccess()) {
+                String output = result.getSuccessMsg();
+                String[] lines = output.split("\n");
+                XLog.d("xiaoc666", result.getSuccessMsg());
+                for (String line : lines) {
+                    line = line.trim();
+                    if (line.startsWith("Access:") && line.contains("-")) {  // Access time
+                        putInfo("a33", extractTimestamp(line));
+                    } else if (line.startsWith("Modify:") && line.contains("-")) {  // Modify time
+                        putInfo("a32", extractTimestamp(line));
+                    } else if (line.startsWith("Change:") && line.contains("-")) {  // Change time
+                        putInfo("a34", extractTimestamp(line));
+                    }
+                }
+            } else {
+                putFailedInfo("a32");
+                putFailedInfo("a33");
+                putFailedInfo("a34");
+            }
+        } catch (Exception e) {
+            putFailedInfo("a32");
+            putFailedInfo("a33");
+            putFailedInfo("a34");
+            XLog.e(TAG, "Failed to collect pubkey blacklist stats: " + e.getMessage());
+        }
+    }
+
+    private void collectKeychainStats() {
+        try {
+            XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.KEYCHAIN_DIR);
+            XLog.d("xiaoc666", result.getSuccessMsg());
+
+            if (result.isSuccess()) {
+                String output = result.getSuccessMsg();
+                String[] lines = output.split("\n");
+
+                for (String line : lines) {
+                    line = line.trim();
+                    if (line.startsWith("Access:") && line.contains("-")) {  // Access time
+                        putInfo("a35", extractTimestamp(line));
+                    }  else if (line.startsWith("Change:") && line.contains("-")) {  // Change time
+                        putInfo("a36", extractTimestamp(line));
+                    }
+                }
+            } else {
+                putFailedInfo("a35");
+                putFailedInfo("a36");
+            }
+        } catch (Exception e) {
+            putFailedInfo("a35");
+            putFailedInfo("a36");
+            XLog.e(TAG, "Failed to collect keychain stats: " + e.getMessage());
+        }
+    }
+
+    private void collectApkPathStats() {
+        try {
+            XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.APK_PATH);
+            XLog.d("xiaoc666", result.getSuccessMsg() + " | " + result.getErrorMsg());
+
+            // 检查错误输出是否包含 "No such file or directory"
+            if (result.getErrorMsg() != null &&
+                    result.getErrorMsg().contains("No such file or directory")) {
+                putInfo("a40", "false");
+            } else {
+                putInfo("a40", "true");
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to check Apppackage: " + e.getMessage());
+            putFailedInfo("a40");
+        }
+    }
+
+    private void collectDownloadPathStats() {
+        try {
+            XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.SDCARD_DOWNLOAD_PATH);
+            XLog.d("xiaoc666", result.getSuccessMsg());
+
+            if (result.isSuccess()) {
+                Map<String, String> timeMap = new LinkedHashMap<>();
+                String output = result.getSuccessMsg();
+                String[] lines = output.split("\n");
+
+                for (String line : lines) {
+                    line = line.trim();
+                    if (line.startsWith("Access:") && line.contains("-")) {
+                        timeMap.put("access", extractTimestamp(line));
+                    } else if (line.startsWith("Change:") && line.contains("-")) {
+                        timeMap.put("change", extractTimestamp(line));
+                    }
+                }
+
+                // 检查是否都获取到了时间戳
+                if (timeMap.containsKey("access") && timeMap.containsKey("change")) {
+                    putInfo("a37", timeMap);
+                } else {
+                    putFailedInfo("a37");
+                }
+            } else {
+                putFailedInfo("a37");
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to collect download path stats: " + e.getMessage());
+            putFailedInfo("a37");
+        }
+    }
+
+    private void collectAndroidPathStats() {
+        try {
+            XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.SDCARD_ANDROID_PATH);
+            XLog.d("xiaoc666", result.getSuccessMsg());
+
+            if (result.isSuccess()) {
+                Map<String, String> timeMap = new LinkedHashMap<>();
+                String output = result.getSuccessMsg();
+                String[] lines = output.split("\n");
+
+                for (String line : lines) {
+                    line = line.trim();
+                    if (line.startsWith("Access:") && line.contains("-")) {
+                        timeMap.put("access", extractTimestamp(line));
+                    } else if (line.startsWith("Change:") && line.contains("-")) {
+                        timeMap.put("change", extractTimestamp(line));
+                    }
+                }
+
+                // 检查是否都获取到了时间戳
+                if (timeMap.containsKey("access") && timeMap.containsKey("change")) {
+                    putInfo("a38", timeMap);
+                } else {
+                    putFailedInfo("a38");
+                }
+            } else {
+                putFailedInfo("a38");
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to collect sdcard android path stats: " + e.getMessage());
+            putFailedInfo("a38");
+        }
+    }
+
+    private void collectTmpPathStats() {
+        try {
+            XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.DATA_LOCAL_TMP_PATH);
+            XLog.d("xiaoc666", result.getSuccessMsg());
+
+            if (result.isSuccess()) {
+                Map<String, String> timeMap = new LinkedHashMap<>();
+                String output = result.getSuccessMsg();
+                String[] lines = output.split("\n");
+
+                for (String line : lines) {
+                    line = line.trim();
+                    if (line.startsWith("Access:") && line.contains("-")) {
+                        timeMap.put("access", extractTimestamp(line));
+                    } else if (line.startsWith("Change:") && line.contains("-")) {
+                        timeMap.put("change", extractTimestamp(line));
+                    }
+                }
+
+                // 检查是否都获取到了时间戳
+                if (timeMap.containsKey("access") && timeMap.containsKey("change")) {
+                    putInfo("a39", timeMap);
+                } else {
+                    putFailedInfo("a39");
+                }
+            } else {
+                putFailedInfo("a39");
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to collect /data/local/tmp path stats: " + e.getMessage());
+            putFailedInfo("a39");
+        }
+    }
 }

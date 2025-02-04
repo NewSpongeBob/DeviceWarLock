@@ -18,6 +18,8 @@ public class Warlock {
     private final Context context;
     private final List<BaseCollector> collectors;
 
+
+    
     private Warlock(Context context) {
         if (context == null) {
             throw new IllegalArgumentException("Context cannot be null");
@@ -42,12 +44,12 @@ public class Warlock {
 
     private List<BaseCollector> initCollectors() {
         return Arrays.asList(
+                new SignatureCollector(context),
                 new BasicInfoCollector(context),
                 new StatInfoCollector(context),
                 new PhoneInfoCollector(context),
                 new MiscInfoCollector(context),
-                new SystemInfoCollector(context),
-                new SignatureCollector(context)
+                new SystemInfoCollector(context)
                 // 添加更多收集器...
         );
     }

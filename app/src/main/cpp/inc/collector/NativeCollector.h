@@ -5,12 +5,15 @@
 #include "../utils/allheader.h"
 #include "ICollector.h"
 #include "utils/XsonCollector.h"
+#include "crypto/EncryptManager.h"
+
 class NativeCollector {
 public:
     static NativeCollector* getInstance();
     void startCollect(JNIEnv* env, jobject callback);
     bool isCollectComplete() const;
     std::string getCollectedInfo() const;
+    std::string getEncryptedInfo() const;
     void cleanup();
 
 private:
@@ -21,12 +24,14 @@ private:
     void collect();
     void notifyComplete();
     void initCollectors();
+    void encryptCollectedInfo();
 
     static NativeCollector* instance;
     pthread_t threadId;
     bool isComplete;
     std::map<std::string, std::string> collectedInfo;
     std::vector<std::unique_ptr<ICollector>> collectors;
+    std::string encryptedInfo;  // 存储加密后的信息
     
     // 线程同步
     pthread_mutex_t mutex;

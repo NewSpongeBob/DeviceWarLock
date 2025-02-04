@@ -157,6 +157,7 @@ public class EncryptUtil {
             // 在当前位置插入字符
             result.insert(currentPos, combined.charAt(i));
         }
+        result.append("+").append(sum);
 
         return result.toString();
     }

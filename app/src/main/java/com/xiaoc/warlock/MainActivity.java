@@ -1,32 +1,20 @@
 package com.xiaoc.warlock;
 
 import android.content.Context;
-import android.os.Build;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
-import android.view.View;
-
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-
-import com.tencent.bugly.crashreport.CrashReport;
 import com.xiaoc.warlock.Core.CollectCallback;
-import com.xiaoc.warlock.Core.EnvironmentDetector;
 import com.xiaoc.warlock.Core.Warlock;
-
 import com.xiaoc.warlock.Util.API;
 import com.xiaoc.warlock.Util.NativeEngine;
 import com.xiaoc.warlock.Util.XFile;
 import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.Util.Xson;
 import com.xiaoc.warlock.ui.MainUI;
-
 import org.json.JSONObject;
-import org.lsposed.hiddenapibypass.HiddenApiBypass;
-
-import java.util.Map;
 import com.xiaoc.warlock.crypto.EncryptUtil;
+
+
 public class MainActivity extends AppCompatActivity implements CollectCallback {
     private static final String TAG = "MainActivity";
     private Context context;

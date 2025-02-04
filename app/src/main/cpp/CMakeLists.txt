@@ -32,11 +32,15 @@ include_directories(
         inc/utils/
         inc/netlink/
         inc/detector/
+        inc/network/
+        ${ANDROID_NDK}/sysroot/usr/include
+        ${ANDROID_NDK}/sysroot/usr/include/${ANDROID_TOOLCHAIN_NAME}
 )
 file(GLOB CRYPTO_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/crypto/*.cpp")
 file(GLOB UTILS_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/utils/*.cpp")
 file(GLOB DETECTOR_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/detector/*.cpp")
 file(GLOB COLLECTOR_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/collector/*.cpp")
+file(GLOB NETWORK_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/network/*.cpp")
 
 # 主库源文件
 set(SOURCE_FILES
@@ -48,6 +52,7 @@ set(SOURCE_FILES
         ${CRYPTO_SOURCES}
         ${UTILS_SOURCES}
         ${COLLECTOR_SOURCES}
+        ${NETWORK_SOURCES}
 )
 
 # 隔离进程库源文件

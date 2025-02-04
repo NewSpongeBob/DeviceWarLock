@@ -36,6 +36,8 @@ namespace constants {
         const char* const GET_PROPS_ID = "n14";
         const char* const NETWORK_INTERFACES_ID = "n15";
         const char* const SERVICE_LIST_ID = "n16";
+        const char* const STORAGE_STATS_ID = "n17";
+        const char* const DRM_ID_ID = "n18";
 
     }
 

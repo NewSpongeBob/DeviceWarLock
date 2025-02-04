@@ -1,4 +1,3 @@
-
 #include "../inc/collector/NativeCollector.h"
 #include "../inc/collector/SystemInfoCollector.h"
 #include "../inc/collector/BasicInfoCollector.h"
@@ -57,12 +56,21 @@ void NativeCollector::collect() {
             collector->collect(collectedInfo);
         }
         
+        // 收集完成后立即进行加密
+        encryptCollectedInfo();
+        
         pthread_mutex_unlock(&mutex);
-        LOGI("Native fingerprint collection completed");
+        LOGI("Native fingerprint collection and encryption completed");
     } catch (const std::exception& e) {
         pthread_mutex_unlock(&mutex);
         LOGE("Error during native collection: %s", e.what());
     }
+}
+
+void NativeCollector::encryptCollectedInfo() {
+    std::string rawInfo = XsonCollector::getInstance()->toString();
+    encryptedInfo = EncryptManager::getInstance()->encryptData(rawInfo);
+    LOGI("Encrypted info: %s", encryptedInfo.c_str());
 }
 
 void NativeCollector::notifyComplete() {
@@ -89,8 +97,9 @@ bool NativeCollector::isCollectComplete() const {
 }
 
 std::string NativeCollector::getCollectedInfo() const {
-    return XsonCollector::getInstance()->toString();
+    return encryptedInfo;
 }
+
 
 void NativeCollector::cleanup() {
     pthread_mutex_lock(&mutex);

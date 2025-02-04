@@ -27,7 +27,7 @@ public class SignatureCollector extends BaseCollector {
 
     @Override
     public void collect() {
-        getSignatureX509(); //a47
+        getSignatureX509(); //a47、a48
     }
     private void getSignatureX509(){
         try {
@@ -43,21 +43,21 @@ public class SignatureCollector extends BaseCollector {
 
             Map<String, Object> signatureInfo = new LinkedHashMap<>();
             Map<String, Object> md5signatureInfo = new LinkedHashMap<>();
-
-            if (normalSignature != null && binderSignature != null) {
                 if (normalSignature.equals(binderSignature)) {
                     putInfo("a47", normalSignature.toCharsString());
+
                     putInfo("a48", getSignatureMD5(normalSignature));
 
                 } else {
-                    signatureInfo.put("pm", normalSignature);
-                    signatureInfo.put("binder", binderSignature);
+                    signatureInfo.put("pm",  normalSignature != null ? normalSignature.toCharsString() : "-1");
+                    signatureInfo.put("binder", binderSignature != null ? binderSignature.toCharsString() : "-1");
                     putInfo("a47", signatureInfo);
-                    md5signatureInfo.put("pm", getSignatureMD5(normalSignature));
-                    md5signatureInfo.put("binder", getSignatureMD5(binderSignature));
+                    md5signatureInfo.put("pm", normalSignature != null ? getSignatureMD5(normalSignature) : "-1");
+                    md5signatureInfo.put("binder", binderSignature != null ? getSignatureMD5(binderSignature) : "-1");
+                
                     putInfo("a48", md5signatureInfo);
                 }
-            }
+            
         } catch (Exception e) {
             putFailedInfo("a47");
             putFailedInfo("a48");

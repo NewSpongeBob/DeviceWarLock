@@ -46,72 +46,111 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 public class BasicInfoCollector extends BaseCollector {
+    private static final String TAG = "BasicInfoCollector";
     private static final Pattern PROP_PATTERN = Pattern.compile("\\[(.*?)\\]:\\s*\\[(.*?)\\]");
     private static final String WIDEVINE_UUID = "edef8ba9-79d6-4ace-a3c8-27dcd51d21ed";
     private static final Uri GSF_URI = Uri.parse("content://com.google.android.gsf.gservices");
     private static final String GSF_PACKAGE = "com.google.android.gsf";
-    private static final String TAG = "BasicInfoCollector";
+
     public BasicInfoCollector(Context context) {
         super(context);
     }
+
     @Override
     public void collect() {
-        getMacAddress();
-        getProp();
-        archInfo();
-        getBootID();
-        getAndroidID();
-        getAppPackage();
-        getSettingVaule();
-        getDrmIdSha256();
-        getFingerPrintForGather();
-        getAaid();
-        collectAccounts();
-        getBluetoothAddress();
-        getAppPath();
+        // 设备标识信息
+        getMacAddress();            // MAC地址
+        getAndroidID();            // a5: Android ID
+        getAaid();                 // a3: Google Advertising ID
+        getDrmIdSha256();          // a6: DRM ID
+        getBootID();               // a4: Boot ID
+        
+        // 系统属性信息
+        getProp();                 // a1: System Properties
+        archInfo();                // a2: CPU架构信息
+        
+        // 设备基本信息
+        collectDeviceBrands();     // a8, a9: 品牌和型号
+        collectDeviceSerial();     // a20: 序列号
+        collectFingerprint();      // a11: 设备指纹
+        collectDataDir();          // a10: 数据目录
+        collectTimeZone();         // a12: 时区信息
+        
+        // 应用相关信息
+        getAppPackage();           // a16: 包名信息
+        getAppPath();              // a14: 应用路径
+        
+        // 其他信息
+        collectAccounts();         // a60: 账户信息
+        getBluetoothAddress();     // a15: 蓝牙地址
+    }
+
+    /**
+     * 收集设备品牌和型号信息
+     */
+    private void collectDeviceBrands() {
         try {
-            // 尝试获取设备型号
             putInfo("a8", Build.BRAND);
         } catch (Exception e) {
             putFailedInfo("a8");
         }
+
         try {
-            // 尝试获取设备型号
             putInfo("a9", Build.MODEL);
         } catch (Exception e) {
             putFailedInfo("a9");
         }
+    }
 
+    /**
+     * 收集设备序列号
+     */
+    private void collectDeviceSerial() {
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 putInfo("a20", Build.getSerial());
-            }else {
+            } else {
                 putFailedInfo("a20");
             }
         } catch (Exception e) {
             putFailedInfo("a20");
         }
+    }
 
+    /**
+     * 收集设备指纹
+     */
+    private void collectFingerprint() {
         try {
             putInfo("a11", Build.FINGERPRINT);
         } catch (Exception e) {
             putFailedInfo("a11");
         }
+    }
+
+    /**
+     * 收集数据目录
+     */
+    private void collectDataDir() {
         try {
             putInfo("a10", context.getApplicationInfo().dataDir);
         } catch (Exception e) {
             putFailedInfo("a10");
         }
+    }
 
+    /**
+     * 收集时区信息
+     */
+    private void collectTimeZone() {
         try {
             TimeZone timeZone = TimeZone.getDefault();
-            putInfo("a12",timeZone.getID());
-        }catch (Exception e){
+            putInfo("a12", timeZone.getID());
+        } catch (Exception e) {
             putFailedInfo("a12");
         }
-
-
     }
+
     public void getAppPath() {
         Map<String, String> pathInfo = new LinkedHashMap<>();
 
@@ -539,12 +578,12 @@ public class BasicInfoCollector extends BaseCollector {
 
             // 检查是否至少有一个值
             if (!aaidMap.isEmpty()) {
-                putInfo("a2", aaidMap);
+                putInfo("a3", aaidMap);
             } else {
-                putFailedInfo("a2");
+                putFailedInfo("a3");
             }
         }catch (Exception e){
-            putFailedInfo("a2");
+            putFailedInfo("a3");
 
         }
 

@@ -1,29 +1,32 @@
-#include "../../inc/crypto/crypto.h"
+#include "../inc/crypto/crypto.h"
 
-
-// Base64编码表
-static const char base64_table[] =
-        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-
-// Base64解码表
-static const unsigned char base64_reverse_table[256] = {
-        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 62, 64, 64, 64, 63,
-        52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 64, 64, 64, 64, 64, 64,
-        64,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,
-        15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 64, 64, 64, 64, 64,
-        64, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,
-        41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 64, 64, 64, 64, 64,
-        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64,
-        64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64, 64
+// 魔改的 Base64 编码表
+static const char base64_table[64] = {
+        'A', 'B', 'P', 'D', 'E', 'F', 'T', 'H', 'I', 'J', 'K', 'L', 'M',
+        'N', 'O', 'C', 'Q', 'R', 'S', 'G', 'U', 'V', 'W', 'X', 'Y', 'Z',
+        'a', 'b', 'c', 'd', 'e', 's', 'g', 'h', 'i', 'j', 'k', 'y', 'm',
+        'n', 'o', 'p', 'q', 'r', 'f', 't', 'u', 'v', 'w', 'x', 'l', 'z',
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '/', '='
 };
+
+// 生成解码表
+static unsigned char base64_reverse_table[256];
+static bool base64_reverse_table_initialized = false;
+
+// 初始化解码表
+static void init_base64_reverse_table() {
+    if (base64_reverse_table_initialized) return;
+
+    // 初始化所有值为无效值
+    memset(base64_reverse_table, 0xFF, 256);
+
+    // 填充有效值
+    for (int i = 0; i < 64; i++) {
+        base64_reverse_table[(unsigned char)base64_table[i]] = i;
+    }
+
+    base64_reverse_table_initialized = true;
+}
 
 // 计算Base64编码后的长度
 size_t BASE64_encode_len(size_t input_length) {
@@ -32,19 +35,40 @@ size_t BASE64_encode_len(size_t input_length) {
 
 // Base64编码
 void BASE64_encode(const uint8_t *input, size_t input_length, char *output) {
-    size_t i, j;
-    uint32_t triple;
+    size_t i = 0;
+    size_t j = 0;
 
-    for (i = 0, j = 0; i < input_length;) {
-        triple = (i < input_length ? input[i++] : 0) << 16;
-        triple |= (i < input_length ? input[i++] : 0) << 8;
-        triple |= (i < input_length ? input[i++] : 0);
-
-        output[j++] = base64_table[(triple >> 18) & 0x3F];
-        output[j++] = base64_table[(triple >> 12) & 0x3F];
-        output[j++] = (i > input_length + 1) ? '=' : base64_table[(triple >> 6) & 0x3F];
-        output[j++] = (i > input_length) ? '=' : base64_table[triple & 0x3F];
+    // 每次处理3个字节
+    while (i + 2 < input_length) {
+        uint32_t b = (input[i] << 16) | (input[i + 1] << 8) | input[i + 2];
+        output[j] = base64_table[(b >> 18) & 0x3F];
+        output[j + 1] = base64_table[(b >> 12) & 0x3F];
+        output[j + 2] = base64_table[(b >> 6) & 0x3F];
+        output[j + 3] = base64_table[b & 0x3F];
+        i += 3;
+        j += 4;
     }
+
+    // 处理剩余字节
+    if (i < input_length) {
+        uint32_t b = input[i] << 16;
+        if (i + 1 < input_length) {
+            b |= input[i + 1] << 8;
+        }
+
+        output[j] = base64_table[(b >> 18) & 0x3F];
+        output[j + 1] = base64_table[(b >> 12) & 0x3F];
+
+        if (i + 1 < input_length) {
+            output[j + 2] = base64_table[(b >> 6) & 0x3F];
+            output[j + 3] = '*';  // 一个填充字符
+        } else {
+            output[j + 2] = '*';  // 两个填充字符
+            output[j + 3] = '*';
+        }
+        j += 4;
+    }
+
     output[j] = '\0';
 }
 
@@ -53,28 +77,57 @@ size_t BASE64_decode_len(const char *input) {
     size_t len = strlen(input);
     size_t padding = 0;
 
-    if (len > 0 && input[len-1] == '=' && input[len-2] == '=')
-        padding = 2;
-    else if (len > 0 && input[len-1] == '=')
-        padding = 1;
+    if (len >= 2) {
+        if (input[len - 1] == '*') padding++;
+        if (input[len - 2] == '*') padding++;
+    }
 
-    return (len * 3) / 4 - padding;
+    return (len / 4) * 3 - padding;
 }
 
 // Base64解码
 int BASE64_decode(const char *input, size_t input_length, uint8_t *output, size_t *output_length) {
-    size_t i, j;
-    uint32_t quad;
+    if (!base64_reverse_table_initialized) {
+        init_base64_reverse_table();
+    }
 
-    for (i = 0, j = 0; i < input_length; i += 4) {
-        quad = (base64_reverse_table[input[i]] << 18);
-        quad += (base64_reverse_table[input[i+1]] << 12);
-        quad += (base64_reverse_table[input[i+2]] << 6);
-        quad += base64_reverse_table[input[i+3]];
+    size_t i = 0;
+    size_t j = 0;
+    uint32_t b = 0;
 
-        if (j < *output_length) output[j++] = (quad >> 16) & 0xFF;
-        if (input[i+2] != '=' && j < *output_length) output[j++] = (quad >> 8) & 0xFF;
-        if (input[i+3] != '=' && j < *output_length) output[j++] = quad & 0xFF;
+    while (i + 3 < input_length) {
+        unsigned char b1 = base64_reverse_table[(unsigned char)input[i]];
+        unsigned char b2 = base64_reverse_table[(unsigned char)input[i + 1]];
+        unsigned char b3 = base64_reverse_table[(unsigned char)input[i + 2]];
+        unsigned char b4 = base64_reverse_table[(unsigned char)input[i + 3]];
+
+        // 检查无效字符
+        if (b1 == 0xFF || b2 == 0xFF ||
+            (input[i + 2] != '*' && b3 == 0xFF) ||
+            (input[i + 3] != '*' && b4 == 0xFF)) {
+            return -1;
+        }
+
+        b = (b1 << 18) | (b2 << 12);
+        if (input[i + 2] != '*') {
+            b |= b3 << 6;
+        }
+        if (input[i + 3] != '*') {
+            b |= b4;
+        }
+
+        output[j] = (b >> 16) & 0xFF;
+        if (input[i + 2] != '*') {
+            output[j + 1] = (b >> 8) & 0xFF;
+        }
+        if (input[i + 3] != '*') {
+            output[j + 2] = b & 0xFF;
+        }
+
+        i += 4;
+        j += 3;
+        if (input[i - 1] == '*') j--;
+        if (input[i - 2] == '*') j--;
     }
 
     *output_length = j;
