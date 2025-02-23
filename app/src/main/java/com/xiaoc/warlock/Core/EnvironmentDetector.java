@@ -5,6 +5,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import com.xiaoc.warlock.Core.detector.CloudPhoneDetector;
+import com.xiaoc.warlock.Core.detector.HookDetector;
 import com.xiaoc.warlock.Core.detector.MiscDetector;
 import com.xiaoc.warlock.Core.detector.RootDetector;
 import com.xiaoc.warlock.Core.detector.SandboxDetector;
@@ -57,8 +58,8 @@ public class EnvironmentDetector  implements BaseDetector.EnvironmentCallback{
                 new XposedDetector(context,this),
                 new SandboxDetector(context,this),
                 new CloudPhoneDetector(context,this),
-                new SignatureDetector(context,this)
-
+                new SignatureDetector(context,this),
+                new HookDetector(context,this)
                 // 添加更多检测器...
         );
     }

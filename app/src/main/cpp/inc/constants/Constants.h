@@ -1,4 +1,3 @@
-
 #ifndef WARLOCK_CONSTANTS_H
 #define WARLOCK_CONSTANTS_H
 
@@ -38,7 +37,10 @@ namespace constants {
         const char* const SERVICE_LIST_ID = "n16";
         const char* const STORAGE_STATS_ID = "n17";
         const char* const DRM_ID_ID = "n18";
-
+        // 新增指纹ID
+        const char* const CPU_INFO_ID = "n19";
+        const char* const HARDWARE_FEATURES_ID = "n20";
+        const char* const MEMORY_INFO_ID = "n21";
     }
 
     // 文件路径常量

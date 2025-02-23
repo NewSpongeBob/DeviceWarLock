@@ -249,10 +249,182 @@ void MiscInfoCollector::collectDrmId() {
     }
 }
 
+void MiscInfoCollector::collectCpuInfo() {
+    rapidjson::Document document;
+    document.SetObject();
+    rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
 
+    std::ifstream cpuinfo("/proc/cpuinfo");
+    if (cpuinfo.is_open()) {
+        std::string line;
+        std::string currentProcessor;
+        rapidjson::Value processorArray(rapidjson::kArrayType);
+
+        while (getline(cpuinfo, line)) {
+            if (line.empty()) continue;
+            
+            size_t delimiter = line.find(":");
+            if (delimiter != std::string::npos) {
+                std::string key = line.substr(0, delimiter);
+                std::string value = line.substr(delimiter + 1);
+                
+                // 去除首尾空格
+                key.erase(0, key.find_first_not_of(" \t"));
+                key.erase(key.find_last_not_of(" \t") + 1);
+                value.erase(0, value.find_first_not_of(" \t"));
+                value.erase(value.find_last_not_of(" \t") + 1);
+
+                if (key == "processor") {
+                    if (!currentProcessor.empty()) {
+                        processorArray.PushBack(
+                            rapidjson::Value(currentProcessor.c_str(), allocator).Move(),
+                            allocator
+                        );
+                    }
+                    currentProcessor = value;
+                } else if (!key.empty() && !value.empty()) {
+                    document.AddMember(
+                        rapidjson::Value(key.c_str(), allocator).Move(),
+                        rapidjson::Value(value.c_str(), allocator).Move(),
+                        allocator
+                    );
+                }
+            }
+        }
+        
+        if (!currentProcessor.empty()) {
+            processorArray.PushBack(
+                rapidjson::Value(currentProcessor.c_str(), allocator).Move(),
+                allocator
+            );
+        }
+        
+        document.AddMember("processors", processorArray, allocator);
+    }
+
+    // 转换为字符串
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document.Accept(writer);
+
+    XsonCollector::getInstance()->put(constants::fingerprint::CPU_INFO_ID, buffer.GetString());
+}
+
+void MiscInfoCollector::collectHardwareFeatures() {
+    rapidjson::Document document;
+    document.SetObject();
+    rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
+
+    // 获取 CPU 架构信息
+    #if defined(__arm__)
+        document.AddMember("cpu_arch", "arm", allocator);
+    #elif defined(__aarch64__)
+        document.AddMember("cpu_arch", "arm64", allocator);
+    #elif defined(__i386__)
+        document.AddMember("cpu_arch", "x86", allocator);
+    #elif defined(__x86_64__)
+        document.AddMember("cpu_arch", "x86_64", allocator);
+    #endif
+
+    // 获取处理器信息
+    std::ifstream cpuinfo("/proc/cpuinfo");
+    if (cpuinfo.is_open()) {
+        std::string line;
+        while (getline(cpuinfo, line)) {
+            if (line.find("Hardware") != std::string::npos ||
+                line.find("model name") != std::string::npos ||
+                line.find("Processor") != std::string::npos) {
+                size_t pos = line.find(":");
+                if (pos != std::string::npos) {
+                    std::string key = line.substr(0, pos);
+                    std::string value = line.substr(pos + 1);
+                    // 去除首尾空格
+                    key.erase(0, key.find_first_not_of(" \t"));
+                    key.erase(key.find_last_not_of(" \t") + 1);
+                    value.erase(0, value.find_first_not_of(" \t"));
+                    value.erase(value.find_last_not_of(" \t") + 1);
+                    
+                    document.AddMember(
+                        rapidjson::Value(key.c_str(), allocator).Move(),
+                        rapidjson::Value(value.c_str(), allocator).Move(),
+                        allocator
+                    );
+                }
+            }
+        }
+        cpuinfo.close();
+    }
+
+    // 获取设备特性
+    char prop[PROP_VALUE_MAX];
+    if (__system_property_get("ro.product.board", prop) > 0) {
+        document.AddMember("board", 
+            rapidjson::Value(prop, allocator).Move(), 
+            allocator);
+    }
+    if (__system_property_get("ro.board.platform", prop) > 0) {
+        document.AddMember("platform", 
+            rapidjson::Value(prop, allocator).Move(), 
+            allocator);
+    }
+    if (__system_property_get("ro.hardware", prop) > 0) {
+        document.AddMember("hardware", 
+            rapidjson::Value(prop, allocator).Move(), 
+            allocator);
+    }
+
+    // 转换为字符串
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document.Accept(writer);
+
+    XsonCollector::getInstance()->put(constants::fingerprint::HARDWARE_FEATURES_ID, buffer.GetString());
+}
+
+void MiscInfoCollector::collectMemoryInfo() {
+    rapidjson::Document document;
+    document.SetObject();
+    rapidjson::Document::AllocatorType& allocator = document.GetAllocator();
+
+    std::ifstream meminfo("/proc/meminfo");
+    if (meminfo.is_open()) {
+        std::string line;
+        while (getline(meminfo, line)) {
+            size_t delimiter = line.find(":");
+            if (delimiter != std::string::npos) {
+                std::string key = line.substr(0, delimiter);
+                std::string value = line.substr(delimiter + 1);
+                
+                // 去除首尾空格
+                key.erase(0, key.find_first_not_of(" \t"));
+                key.erase(key.find_last_not_of(" \t") + 1);
+                value.erase(0, value.find_first_not_of(" \t"));
+                value.erase(value.find_last_not_of(" \t") + 1);
+
+                if (!key.empty() && !value.empty()) {
+                    document.AddMember(
+                        rapidjson::Value(key.c_str(), allocator).Move(),
+                        rapidjson::Value(value.c_str(), allocator).Move(),
+                        allocator
+                    );
+                }
+            }
+        }
+    }
+
+    // 转换为字符串
+    rapidjson::StringBuffer buffer;
+    rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
+    document.Accept(writer);
+
+    XsonCollector::getInstance()->put(constants::fingerprint::MEMORY_INFO_ID, buffer.GetString());
+}
 
 void MiscInfoCollector::collect(std::map<std::string, std::string>& info) {
     collectServiceList();    // n16
     collectStorageStats();   // n17
     collectDrmId();         // n18
+    collectCpuInfo();       // n19
+    collectHardwareFeatures(); // n20
+    collectMemoryInfo();    // n21
 }

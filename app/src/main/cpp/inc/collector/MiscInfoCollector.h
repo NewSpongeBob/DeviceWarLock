@@ -12,9 +12,12 @@
 #include <rapidjson/stringbuffer.h>
 #include <dlfcn.h>
 #include <media/NdkMediaDrm.h>
+#include <EGL/egl.h>
+#include <fstream>
 
 using namespace constants::fingerprint;
 using namespace constants::path;
+
 class MiscInfoCollector : public ICollector {
 public:
     void collect(std::map<std::string, std::string>& info) override;
@@ -23,6 +26,9 @@ private:
     void collectStorageStats();
     void collectDrmId();
     void collectDirStats();
+    void collectCpuInfo();
+    void collectHardwareFeatures();
+    void collectMemoryInfo();
 };
 
 #endif

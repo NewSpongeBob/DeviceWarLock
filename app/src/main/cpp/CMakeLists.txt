@@ -47,6 +47,7 @@ set(SOURCE_FILES
         src/warlockCore.cpp
         src/netlink/ifaddrs.cpp
         src/netlink/NetlinkConnection.cpp
+        src/detector/SystemDetector.cpp
         ${DETECTOR_SOURCES}
         ${syscall}
         ${CRYPTO_SOURCES}

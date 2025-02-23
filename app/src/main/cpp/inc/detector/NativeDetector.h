@@ -8,6 +8,7 @@
 #include "FridaDetector.h"
 #include "VirtualDetector.h"
 #include "MiscDetector.h"
+#include "SystemDetector.h"
 class NativeDetector {
 public:
     static NativeDetector* getInstance();

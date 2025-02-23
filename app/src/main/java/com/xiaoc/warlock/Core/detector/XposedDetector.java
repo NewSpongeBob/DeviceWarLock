@@ -27,7 +27,6 @@ public class XposedDetector extends BaseDetector {
     private void checkXposed() {
         try {
 
-
             List<String> foundFiles = new ArrayList<>();
             for (String path : BuildConfig.XPOSED_PATHS) {
                 if (XFile.exists(path)) {
@@ -50,6 +49,4 @@ public class XposedDetector extends BaseDetector {
         } catch (Exception e) {
         }
     }
-
-
 }
