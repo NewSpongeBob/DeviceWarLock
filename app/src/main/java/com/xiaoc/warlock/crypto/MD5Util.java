@@ -20,9 +20,10 @@ public class MD5Util {
             TABLE[i] = (int)(long)((1L << 32) * Math.abs(Math.sin(i + 1)));
         }
     }
-
     public static String md5(String input) {
-        byte[] message = input.getBytes();
+        return md5(input.getBytes());
+    }
+    public static String md5(byte[] message) {
 
         // 初始化变量
         int a0 = 0x67452301;

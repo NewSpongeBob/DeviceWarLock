@@ -45,8 +45,26 @@ public class RootDetector extends BaseDetector {
         checkUnLock();
         checkMountFile();
         checkMapsFile();
+        checkTeeForLocked();
     }
+    private  void checkTeeForLocked() {
 
+        try {
+            BootloaderStateChecker.BootloaderStatus status =
+                    BootloaderStateChecker.detectStatus(context);
+            if (status.getDisplayName().equals("UNLOCKED")){
+                InfoItem warning = new WarningBuilder("checkTeeForUnlock", null)
+                        .addDetail("check",  status.getDisplayName())
+                        .addDetail("level", "medium")
+                        .build();
+                reportAbnormal(warning);
+            }
+
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
     /**
      * 检查Root相关应用包名
      * 遍历预定义的包名列表，检查是否有已安装的Root应用

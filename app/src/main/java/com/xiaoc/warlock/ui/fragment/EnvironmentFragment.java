@@ -89,7 +89,7 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
         // 启动延时线程
         new Thread(() -> {
             try {
-                Thread.sleep(3000);
+                Thread.sleep(10);
                 isDelayComplete = true;
 
                 requireActivity().runOnUiThread(() -> {
@@ -123,9 +123,6 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
             }
         }).start();
     }
-
-
-
 
     private void initRecyclerView() {
         LinearLayoutManager layoutManager = new LinearLayoutManager(getContext());

@@ -14,6 +14,9 @@ import com.xiaoc.warlock.ui.MainUI;
 import org.json.JSONObject;
 import com.xiaoc.warlock.crypto.EncryptUtil;
 
+import java.io.BufferedReader;
+import java.io.FileReader;
+
 
 public class MainActivity extends AppCompatActivity implements CollectCallback {
     private static final String TAG = "MainActivity";
@@ -21,6 +24,10 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
     private MainUI mainUI;
     private boolean javaCollectComplete = false;
     private boolean nativeCollectComplete = false;
+    
+    // 公共静态变量，供Fragment访问
+
+    public static boolean sBothCollectComplete = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,9 +35,17 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
         //CrashReport.initCrashReport(getApplicationContext(), "56552ffeab", false);
         initEnvironment();
         startCollect();
-
+        XLog.i("boot->"+String.valueOf(getSystemBootTime()));
     }
-
+    public static long getSystemBootTime() {
+        try {
+            String uptime = new BufferedReader(new FileReader("/proc/uptime"))
+                    .readLine().split(" ")[0]; // 读取第一个值（单位：秒）
+            return System.currentTimeMillis() - (long)(Double.parseDouble(uptime) * 1000);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
     private void initEnvironment() {
         context = this;
         mainUI = new MainUI(this);
@@ -71,6 +86,9 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
             return;
         }
 
+        // 设置完成标志
+        sBothCollectComplete = true;
+
         try {
             // 保存单独的结果
             saveJavaResults();
@@ -82,6 +100,15 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
             XLog.e(TAG, "Error processing results: " + e.getMessage());
         }
     }
+    
+    /**
+     * 检查指纹收集是否完成
+     * @return 如果Java和Native层都完成，返回true；否则返回false
+     */
+    public static boolean isCollectionComplete() {
+        return sBothCollectComplete;
+    }
+    
     private void saveCombinedResults() {
         try {
             JSONObject combined = new JSONObject();
@@ -99,7 +126,7 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
         String javaJson = Xson.getMapString(true);
        // XLog.d(TAG, "Java fingerprint result: " + javaJson);
         EncryptUtil encryptUtil = new EncryptUtil(javaJson);
-        saveToFile("java_fingerprint.txt", encryptUtil.result);
+        saveToFile("java_fingerprint.txt", javaJson);
     }
 
     private void saveNativeResults() {
@@ -131,8 +158,6 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
     private void cleanup() {
         javaCollectComplete = false;
         nativeCollectComplete = false;
-
+        // 不重置静态变量，因为其他组件可能依赖这些状态
     }
-
-
 }

@@ -8,6 +8,7 @@ import com.xiaoc.warlock.Core.collector.PhoneInfoCollector;
 import com.xiaoc.warlock.Core.collector.SignatureCollector;
 import com.xiaoc.warlock.Core.collector.StatInfoCollector;
 import com.xiaoc.warlock.Core.collector.SystemInfoCollector;
+import com.xiaoc.warlock.Core.collector.WebViewInfoCollector;
 import com.xiaoc.warlock.Util.Xson;
 
 import java.util.Arrays;
@@ -49,7 +50,8 @@ public class Warlock {
                 new StatInfoCollector(context),
                 new PhoneInfoCollector(context),
                 new MiscInfoCollector(context),
-                new SystemInfoCollector(context)
+                new SystemInfoCollector(context),
+                new WebViewInfoCollector(context)
                 // 添加更多收集器...
         );
     }

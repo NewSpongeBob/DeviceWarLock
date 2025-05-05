@@ -47,9 +47,7 @@ public class PhoneInfoCollector extends BaseCollector {
             hasValidValue |= collectMainSimInfo(tm, phoneInfo);
             
             // 收集双卡信息（如果支持）
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                hasValidValue |= collectDualSimInfo(tm, phoneInfo);
-            }
+            hasValidValue |= collectDualSimInfo(tm, phoneInfo);
 
             // 检查是否有任何有效值
             if (hasValidValue) {
@@ -326,9 +324,7 @@ public class PhoneInfoCollector extends BaseCollector {
     private String getAdvertisingId() {
         try {
             AdvertisingIdClient.Info adInfo = AdvertisingIdClient.getAdvertisingIdInfo(context);
-            if (adInfo != null) {
-                return adInfo.getId();
-            }
+            return adInfo.getId();
         } catch (Exception e) {
             XLog.e(TAG, "Failed to get advertising ID: " + e.getMessage());
         }

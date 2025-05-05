@@ -4,14 +4,15 @@ import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
-import android.os.Build;
 import android.os.IBinder;
 import android.os.Parcel;
 
 import com.xiaoc.warlock.Core.BaseCollector;
-import com.xiaoc.warlock.Core.BaseDetector;
 import com.xiaoc.warlock.Util.XLog;
 import android.os.Process;
+
+import androidx.annotation.Nullable;
+
 import java.lang.reflect.Field;
 import java.security.MessageDigest;
 import java.util.LinkedHashMap;
@@ -49,10 +50,10 @@ public class SignatureCollector extends BaseCollector {
                     putInfo("a48", getSignatureMD5(normalSignature));
 
                 } else {
-                    signatureInfo.put("pm",  normalSignature != null ? normalSignature.toCharsString() : "-1");
+                    signatureInfo.put("pm", normalSignature.toCharsString());
                     signatureInfo.put("binder", binderSignature != null ? binderSignature.toCharsString() : "-1");
                     putInfo("a47", signatureInfo);
-                    md5signatureInfo.put("pm", normalSignature != null ? getSignatureMD5(normalSignature) : "-1");
+                    md5signatureInfo.put("pm", getSignatureMD5(normalSignature));
                     md5signatureInfo.put("binder", binderSignature != null ? getSignatureMD5(binderSignature) : "-1");
                 
                     putInfo("a48", md5signatureInfo);
@@ -94,16 +95,7 @@ public class SignatureCollector extends BaseCollector {
     public static Signature getAppSignatureForBinder(Context context) {
         Signature signature = null;
         try {
-            PackageManager packageManager = context.getPackageManager();
-            // 通过反射获取 mPM 字段
-            Field mPmField = packageManager.getClass().getDeclaredField("mPM");
-            mPmField.setAccessible(true);
-            Object iPackageManager = mPmField.get(packageManager);
-
-            // 获取 mRemote
-            Field mRemoteField = iPackageManager.getClass().getDeclaredField("mRemote");
-            mRemoteField.setAccessible(true);
-            IBinder binder = (IBinder) mRemoteField.get(iPackageManager);
+            IBinder binder = getBinder(context);
 
             // 准备Parcel数据
             Parcel data = Parcel.obtain();
@@ -138,6 +130,20 @@ public class SignatureCollector extends BaseCollector {
             e.printStackTrace();
         }
         return signature;
+    }
+
+    @Nullable
+    private static IBinder getBinder(Context context) throws NoSuchFieldException, IllegalAccessException {
+        PackageManager packageManager = context.getPackageManager();
+        // 通过反射获取 mPM 字段
+        Field mPmField = packageManager.getClass().getDeclaredField("mPM");
+        mPmField.setAccessible(true);
+        Object iPackageManager = mPmField.get(packageManager);
+
+        // 获取 mRemote
+        Field mRemoteField = iPackageManager.getClass().getDeclaredField("mRemote");
+        mRemoteField.setAccessible(true);
+        return (IBinder) mRemoteField.get(iPackageManager);
     }
 
     // 获取TRANSACTION_getPackageInfo的值

@@ -18,11 +18,16 @@ import com.xiaoc.warlock.Util.XCommandUtil;
 import com.xiaoc.warlock.Util.XFile;
 import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.Util.XString;
+import com.xiaoc.warlock.crypto.MD5Util;
+
 import android.os.Process;
+
+import java.io.File;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -54,6 +59,7 @@ public class SystemInfoCollector extends BaseCollector {
         collectAppUid();     // a68
         collectDataDirUid();     // a69
         collectTargetApkPaths();    // a70
+        collectSystemFontHash();    // a80
     }
     /**
      * 收集传感器信息
@@ -288,20 +294,24 @@ public class SystemInfoCollector extends BaseCollector {
                     String key = parts[0].trim();
                     String value = parts[1].trim();
 
-                    if (key.equals("processor")) {
-                        if (isNewProcessor) {
-                            currentProcessor = new LinkedHashMap<>();
-                            isNewProcessor = false;
-                        }
-                    } else if (key.equals("Features")) {
-                        // Features 放在 regular 信息中
-                        regularInfo.put(key, value);
-                    } else if (key.equals("CPU variant") ||
-                            key.equals("CPU part")) {
-                        // 处理器特定信息
-                        if (currentProcessor != null) {
-                            currentProcessor.put(key, value);
-                        }
+                    switch (key) {
+                        case "processor":
+                            if (isNewProcessor) {
+                                currentProcessor = new LinkedHashMap<>();
+                                isNewProcessor = false;
+                            }
+                            break;
+                        case "Features":
+                            // Features 放在 regular 信息中
+                            regularInfo.put(key, value);
+                            break;
+                        case "CPU variant":
+                        case "CPU part":
+                            // 处理器特定信息
+                            if (currentProcessor != null) {
+                                currentProcessor.put(key, value);
+                            }
+                            break;
                     }
                 }
 
@@ -373,7 +383,7 @@ public class SystemInfoCollector extends BaseCollector {
             }
 
             // 获取系统ID
-            String systemId = String.valueOf(mediaDrm.getPropertyString("systemId"));
+            String systemId = mediaDrm.getPropertyString("systemId");
             if (!XString.isEmpty(systemId)) {
                 drmInfo.put("s", systemId);
             }
@@ -802,14 +812,7 @@ public class SystemInfoCollector extends BaseCollector {
                         info.put("s", sourceDir);
                         apkList.add(info);
                     }
-                } catch (PackageManager.NameNotFoundException e) {
-                    // 应用未安装,跳过
-                    XLog.d(TAG, "Package not found: " + packageName);
-                    continue;
-                } catch (Exception e) {
-                    // 其他错误,跳过
-                    XLog.d(TAG, "Failed to get info for " + packageName + ": " + e.getMessage());
-                    continue;
+                } catch (Exception ignored) {
                 }
             }
 
@@ -820,8 +823,42 @@ public class SystemInfoCollector extends BaseCollector {
             }
 
         } catch (Exception e) {
-            XLog.e(TAG, "Failed to collect target apk paths: " + e.getMessage());
             putFailedInfo("a70");
         }
     }
+
+    /**
+     * 遍历/system/fonts目录下的tf字体文件
+     */
+    private void collectSystemFontHash() {
+        File fontDir = new File("/system/fonts");
+        StringBuilder allHashes = new StringBuilder();
+
+        if (fontDir.exists()) {
+            Collection<File> fontFiles = XFile.listFiles(fontDir, new String[]{"ttf"}, true);
+
+            for (File font : fontFiles) {
+                String md5;
+                try {
+                    md5 = MD5Util.md5(XFile.readFileToByteArray(font));
+                    // 将每个MD5拼接到字符串中
+                    allHashes.append(md5);
+                } catch (Exception e) {
+                    putFailedInfo("a80");
+                }
+            }
+
+            // 生成最终的MD5
+            if (allHashes.length() > 0) {
+                String finalMd5 = MD5Util.md5(allHashes.toString().getBytes());
+                putInfo("a80", finalMd5);
+            }else {
+                putFailedInfo("a80");
+            }
+        } else {
+            putFailedInfo("a80");
+        }
+
+    }
+
 }

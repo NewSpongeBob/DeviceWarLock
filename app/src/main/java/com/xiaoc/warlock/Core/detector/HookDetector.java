@@ -149,4 +149,5 @@ public class HookDetector extends BaseDetector {
 
         return suspiciousSegments;
     }
+
 }

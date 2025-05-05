@@ -5,6 +5,8 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.hardware.Sensor;
 import android.hardware.SensorManager;
+import android.media.MediaCodecInfo;
+import android.media.MediaCodecList;
 import android.os.BatteryManager;
 import android.os.Build;
 
@@ -13,6 +15,7 @@ import com.xiaoc.warlock.Util.WarningBuilder;
 import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,6 +24,7 @@ public class CloudPhoneDetector extends BaseDetector {
     private final BatteryManager batteryManager;
     private boolean isDetecting = false;
 
+    private String DEV_PATH = "/dev";
     public CloudPhoneDetector(Context context, EnvironmentCallback callback) {
         super(context, callback);
         batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
@@ -32,6 +36,8 @@ public class CloudPhoneDetector extends BaseDetector {
         isDetecting = true;
         checkBatteryStatus();
         checkAOSPSensors();
+        checkDevDirectory();
+        checkOMXNames();
     }
 
     private void checkBatteryStatus() {
@@ -167,6 +173,65 @@ public class CloudPhoneDetector extends BaseDetector {
             }
         } catch (Exception e) {
             XLog.e(TAG, "AOSP sensors detection failed", e);
+        }
+    }
+
+    /**
+     * 扫描 /dev 目录，查找可能的 RK3588 控制器节点
+     * @return
+     */
+    private void  checkDevDirectory() {
+        List<String> nodes = new ArrayList<>();
+        File devDir = new File(DEV_PATH);
+        if (devDir.exists() && devDir.isDirectory()) {
+            File[] files = devDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    String name = file.getName();
+                    // 查找常见的 RK3588 相关节点，例如 video、rk 等
+                    if (name.startsWith("video") && name.startsWith("rk")) {
+                        nodes.add(name);
+                    }
+                }
+            }
+            if (!nodes.isEmpty()){
+                InfoItem warning = new WarningBuilder("checkDev", null)
+                        .addDetail("check", nodes.toString().trim())
+                        .addDetail("level", "high")
+                        .build();
+
+                reportAbnormal(warning);
+            }
+        } else {
+            XLog.e(TAG, "Cannot access /dev directory. Permission denied or not available.");
+        }
+    }
+
+    /**
+     * 通过检测MediaCodec API 的名称是否包含OMX以及rk。
+     */
+    private  void checkOMXNames() {
+        List<String> omxNames = new ArrayList<>();
+        try {
+            MediaCodecList codecList = new MediaCodecList(MediaCodecList.ALL_CODECS);
+            for (MediaCodecInfo codecInfo : codecList.getCodecInfos()) {
+                String codecName = codecInfo.getName();
+                // OMX 名称通常以 "OMX." 开头
+                if (codecName.startsWith("OMX.") && codecName.contains("rk")) {
+                    omxNames.add(codecName);
+                }
+            }
+            if (!omxNames.isEmpty()){
+                InfoItem warning = new WarningBuilder("checkMediaCodec", null)
+                        .addDetail("check", omxNames.toString().trim())
+                        .addDetail("level", "high")
+                        .build();
+
+                reportAbnormal(warning);
+            }
+
+        } catch (Exception e) {
+            XLog.e(TAG, "Error retrieving OMX names: " + e.getMessage());
         }
     }
 }

@@ -208,6 +208,10 @@ void FridaDetector::detectFridaFile(JNIEnv* env) {
                 const long SYSCALL_OPEN = 2;         // open for x86_64
                 const long SYSCALL_GETDENTS64 = 217; // getdents64 for x86_64
                 const long SYSCALL_CLOSE = 3;        // close for x86_64
+                #elif defined(__i386__)
+                const long SYSCALL_OPEN = 5;         // open for x86
+                const long SYSCALL_GETDENTS64 = 220; // getdents64 for x86
+                const long SYSCALL_CLOSE = 6;        // close for x86
                 #else
                 #error "Unsupported architecture"
         #endif
@@ -288,6 +292,11 @@ void FridaDetector::detectFridaInMaps(JNIEnv* env) {
         const long SYSCALL_OPENAT = 257;
         const long SYSCALL_READ = 0;
         const long SYSCALL_CLOSE = 3;
+
+        #elif defined(__i386__)
+        const long SYSCALL_OPENAT = 295;    // openat for x86
+        const long SYSCALL_READ = 3;        // read for x86
+        const long SYSCALL_CLOSE = 6;       // close for x86
         #else
         #error "Unsupported architecture"
 #endif

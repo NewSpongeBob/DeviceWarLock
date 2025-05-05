@@ -11,10 +11,9 @@ import com.xiaoc.warlock.Util.XLog;
 import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.TimeZone;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,8 +46,7 @@ public class StatInfoCollector extends BaseCollector {
             XCommandUtil.CommandResult result = XCommandUtil.execute("stat -f /storage/emulated/0");
             if (result.isSuccess()) {
                 String output = result.getSuccessMsg();
-                Map<String, Object> storageStats = new LinkedHashMap<>();
-                
+
                 // 更新正则表达式以匹配实际输出格式
                 Pattern blockSizePattern = Pattern.compile("Block Size: (\\d+)");
                 Pattern totalBlocksPattern = Pattern.compile("Blocks: Total: (\\d+)");
@@ -63,10 +61,10 @@ public class StatInfoCollector extends BaseCollector {
                 if (blockSizeMatcher.find() && totalBlocksMatcher.find() && 
                     freeBlocksMatcher.find() && availableBlocksMatcher.find()) {
                     
-                    long blockSize = Long.parseLong(blockSizeMatcher.group(1));
-                    long totalBlocks = Long.parseLong(totalBlocksMatcher.group(1));
-                    long freeBlocks = Long.parseLong(freeBlocksMatcher.group(1));
-                    long availableBlocks = Long.parseLong(availableBlocksMatcher.group(1));
+                    long blockSize = Long.parseLong(Objects.requireNonNull(blockSizeMatcher.group(1)));
+                    long totalBlocks = Long.parseLong(Objects.requireNonNull(totalBlocksMatcher.group(1)));
+                    long freeBlocks = Long.parseLong(Objects.requireNonNull(freeBlocksMatcher.group(1)));
+                    long availableBlocks = Long.parseLong(Objects.requireNonNull(availableBlocksMatcher.group(1)));
                     
                     // 构建结果对象
 
@@ -311,7 +309,7 @@ public class StatInfoCollector extends BaseCollector {
                 // 获取Inode
                 Matcher inodeMatcher = inodePattern.matcher(result.getSuccessMsg());
                 if (inodeMatcher.find()) {
-                    stats.put("I", Long.parseLong(inodeMatcher.group(1)));
+                    stats.put("I", Long.parseLong(Objects.requireNonNull(inodeMatcher.group(1))));
                 }
 
             } catch (Exception e) {
@@ -357,7 +355,6 @@ public class StatInfoCollector extends BaseCollector {
     private void collectKeychainStats() {
         try {
             XCommandUtil.CommandResult result = XCommandUtil.execute("stat " + BuildConfig.KEYCHAIN_DIR);
-            XLog.d("xiaoc666", result.getSuccessMsg());
 
             if (result.isSuccess()) {
                 String output = result.getSuccessMsg();

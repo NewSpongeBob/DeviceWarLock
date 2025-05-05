@@ -11,6 +11,9 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 public class XFile {
 
@@ -224,21 +227,65 @@ public class XFile {
     }
 
     /**
-     * 读取文件为字节数组
-     * @param filePath 文件路径
-     * @return 字节数组
+     * 读取整个文件内容为字节数组
+     *
+     * @param file 要读取的文件
+     * @return 文件内容对应的 byte[]
+     * @throws IOException 读取失败时抛出
      */
-    public static byte[] readFileToBytes(String filePath) {
-        File file = new File(filePath);
-        if (!file.exists()) return null;
-
-        try (FileInputStream fis = new FileInputStream(file)) {
-            byte[] data = new byte[(int) file.length()];
-            fis.read(data);
-            return data;
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
+    public static byte[] readFileToByteArray(File file) throws IOException {
+        long length = file.length();
+        if (length > Integer.MAX_VALUE) {
+            throw new IOException("File is too large to fit in a byte array: " + file.getName());
         }
+
+        byte[] bytes = new byte[(int) length];
+        FileInputStream fis = null;
+        try {
+            fis = new FileInputStream(file);
+            int offset = 0;
+            int numRead;
+            while (offset < bytes.length && (numRead = fis.read(bytes, offset, bytes.length - offset)) >= 0) {
+                offset += numRead;
+            }
+
+            if (offset < bytes.length) {
+                throw new IOException("Could not completely read file " + file.getName());
+            }
+            return bytes;
+        } finally {
+            if (fis != null) {
+                fis.close();
+            }
+        }
+    }
+    /**
+     * 列出指定目录及其子目录下所有指定后缀名的文件
+     *
+     * @param dir 起始目录
+     * @param extensions 文件扩展名数组，例如 {"ttf"}
+     * @param recursive 是否递归子目录
+     * @return 文件集合
+     */
+    public static Collection<File> listFiles(File dir, String[] extensions, boolean recursive) {
+        List<File> result = new ArrayList<>();
+        if (dir != null && dir.exists() && dir.isDirectory()) {
+            File[] files = dir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isDirectory() && recursive) {
+                        result.addAll(listFiles(file, extensions, true));
+                    } else {
+                        for (String ext : extensions) {
+                            if (file.getName().toLowerCase().endsWith("." + ext.toLowerCase())) {
+                                result.add(file);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return result;
     }
 }

@@ -21,7 +21,6 @@ public abstract class BaseDetector {
     public abstract void detect();
 
     protected void reportAbnormal(InfoItem item) {
-        XLog.e("qiaoliwa", String.valueOf(item));
         if (callback != null) {
             callback.onAbnormalDetected(item);
         }

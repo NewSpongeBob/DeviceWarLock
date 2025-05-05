@@ -1,6 +1,8 @@
 package com.xiaoc.warlock.Core.detector;
 
 import android.Manifest;
+import android.app.KeyguardManager;
+import android.app.admin.DevicePolicyManager;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
@@ -12,6 +14,7 @@ import android.net.Network;
 import android.net.NetworkCapabilities;
 import android.os.Build;
 import android.provider.Settings;
+import com.xiaoc.warlock.Core.detector.BootloaderStateChecker;
 import android.telephony.TelephonyManager;
 
 import com.xiaoc.warlock.App;
@@ -24,8 +27,9 @@ import com.xiaoc.warlock.Util.WarningBuilder;
 import com.xiaoc.warlock.Util.XFile;
 import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
-import android.Manifest.permission;
+
 import java.net.NetworkInterface;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -494,7 +498,7 @@ public class MiscDetector extends BaseDetector {
                 Location lastLocation = locationManager.getLastKnownLocation(LocationManager.PASSIVE_PROVIDER);
                 if (lastLocation != null && lastLocation.isFromMockProvider()) {
                     reportMockLocation("Passive", lastLocation);
-                    return;
+
                 }
             }
         } catch (Exception e) {
@@ -578,6 +582,21 @@ public class MiscDetector extends BaseDetector {
         }
     }
 
+    /**
+     * 检测设备是否设置了解锁屏幕的密码、PIN、图案或生物识别
+     * false 表示未设置
+     */
+    private void checkScreenLock() {
+        KeyguardManager keyguardManager = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
+        if (keyguardManager != null && !keyguardManager.isKeyguardSecure()) {
+            InfoItem warning = new WarningBuilder("checkScreenLock", null)
+                    .addDetail("check", String.valueOf(false))
+                    .addDetail("level", "low")
+                    .build();
+            reportAbnormal(warning);
+        }
+    }
+
     @Override
     public void detect() {
         checkReflectionAvailable();
@@ -593,5 +612,6 @@ public class MiscDetector extends BaseDetector {
         checkMockLocation();
         checkAllowMockLocation();
         checkMockLocationApps();
+        checkScreenLock();
     }
 }

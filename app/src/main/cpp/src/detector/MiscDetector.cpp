@@ -129,6 +129,8 @@ void MiscDetector::detectPathExistence(JNIEnv* env) {
         const long SYSCALL_FACCESSAT = 334; // ARM
         #elif defined(__x86_64__)
         const long SYSCALL_FACCESSAT = 269; // x86_64
+        #elif defined(__i386__)
+        const long SYSCALL_FACCESSAT = 297; // x86
         #else
         #error "Unsupported architecture"
 #endif
@@ -166,6 +168,10 @@ void MiscDetector::detectTmpInMaps(JNIEnv* env) {
         const long SYSCALL_OPENAT = 257;
         const long SYSCALL_READ = 0;
         const long SYSCALL_CLOSE = 3;
+        #elif defined(__i386__)
+        const long SYSCALL_OPENAT = 295;
+        const long SYSCALL_READ = 3;
+        const long SYSCALL_CLOSE = 6;
 #endif
 
         int fd = utils::SyscallUtils::syscall(SYSCALL_OPENAT, AT_FDCWD, (long)"/proc/self/maps", O_RDONLY);

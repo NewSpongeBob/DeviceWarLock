@@ -10,28 +10,13 @@
         android:clipToPadding="false"
         android:padding="8dp" />
 
-    <LinearLayout
-        android:id="@+id/loadingContainer"
+    <TextView
+        android:id="@+id/loadingText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:visibility="gone">
-
-        <ProgressBar
-            android:id="@+id/loadingProgress"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            android:id="@+id/loadingText"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:text="collect Device Info ing..."
-            android:textColor="@android:color/darker_gray" />
-
-    </LinearLayout>
+        android:textSize="18sp"
+        android:textColor="@android:color/darker_gray"
+        android:visibility="gone" />
 
 </FrameLayout>

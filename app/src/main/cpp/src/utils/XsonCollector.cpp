@@ -45,7 +45,6 @@ void XsonCollector::putFailed(const std::string& key) {
     rapidjson::Value item(rapidjson::kObjectType);
 
     item.AddMember("s", -1, allocator);  // 失败状态
-    item.AddMember("v", rapidjson::Value(rapidjson::kNullType), allocator);
 
     doc.AddMember(
             rapidjson::Value(key.c_str(), allocator).Move(),

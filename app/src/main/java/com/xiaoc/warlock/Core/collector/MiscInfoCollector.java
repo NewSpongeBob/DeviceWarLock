@@ -22,7 +22,8 @@ import android.view.inputmethod.InputMethodInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.view.inputmethod.InputMethodSubtype;
 
-import com.xiaoc.warlock.App;
+import androidx.annotation.NonNull;
+
 import com.xiaoc.warlock.BuildConfig;
 import com.xiaoc.warlock.Core.BaseCollector;
 import com.xiaoc.warlock.Util.AppChecker;
@@ -37,12 +38,10 @@ import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -145,11 +144,7 @@ public class MiscInfoCollector  extends BaseCollector {
             StatFs statFs = new StatFs(dataDir.getPath());
             long totalBytes;
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR2) {
-                totalBytes = statFs.getTotalBytes();
-            } else {
-                totalBytes = (long) statFs.getBlockSize() * statFs.getBlockCount();
-            }
+            totalBytes = statFs.getTotalBytes();
 
             putInfo("a21", totalBytes);
         } catch (Exception e) {
@@ -243,11 +238,9 @@ public class MiscInfoCollector  extends BaseCollector {
 
         // 方法3: 通过BatteryManager
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
-                int capacity = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
-                capacityMap.put("battery_manager", String.valueOf(capacity));
-            }
+            BatteryManager batteryManager = (BatteryManager) context.getSystemService(Context.BATTERY_SERVICE);
+            int capacity = batteryManager.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY);
+            capacityMap.put("battery_manager", String.valueOf(capacity));
         } catch (Exception e) {
             XLog.e(TAG, "Failed to get battery capacity from BatteryManager: " + e.getMessage());
         }
@@ -709,12 +702,7 @@ public class MiscInfoCollector  extends BaseCollector {
                     deviceInfo.put("v", String.format("%04x", device.getVendorId()));
 
                     // 设备类型
-                    StringBuilder sources = new StringBuilder();
-                    int sources_raw = device.getSources();
-                    if ((sources_raw & InputDevice.SOURCE_KEYBOARD) != 0) sources.append("keyboard ");
-                    if ((sources_raw & InputDevice.SOURCE_TOUCHSCREEN) != 0) sources.append("touchscreen ");
-                    if ((sources_raw & InputDevice.SOURCE_MOUSE) != 0) sources.append("mouse ");
-                    if ((sources_raw & InputDevice.SOURCE_TOUCHPAD) != 0) sources.append("touchpad ");
+                    StringBuilder sources = getStringBuilder(device);
                     deviceInfo.put("src", sources.toString().trim());
 
                     if (!deviceInfo.isEmpty()) {
@@ -728,6 +716,17 @@ public class MiscInfoCollector  extends BaseCollector {
         }
 
         return devices;
+    }
+
+    @NonNull
+    private static StringBuilder getStringBuilder(InputDevice device) {
+        StringBuilder sources = new StringBuilder();
+        int sources_raw = device.getSources();
+        if ((sources_raw & InputDevice.SOURCE_KEYBOARD) != 0) sources.append("keyboard ");
+        if ((sources_raw & InputDevice.SOURCE_TOUCHSCREEN) != 0) sources.append("touchscreen ");
+        if ((sources_raw & InputDevice.SOURCE_MOUSE) != 0) sources.append("mouse ");
+        if ((sources_raw & InputDevice.SOURCE_TOUCHPAD) != 0) sources.append("touchpad ");
+        return sources;
     }
 
     /**
@@ -744,45 +743,41 @@ public class MiscInfoCollector  extends BaseCollector {
             List<InputMethodInfo> enabledInputMethods = imm.getEnabledInputMethodList();
             // 创建已启用输入法的ID集合，用于快速查找
             Set<String> enabledIds = new HashSet<>();
-            if (enabledInputMethods != null) {
-                for (InputMethodInfo imi : enabledInputMethods) {
-                    enabledIds.add(imi.getId());
-                }
+            for (InputMethodInfo imi : enabledInputMethods) {
+                enabledIds.add(imi.getId());
             }
 
-            if (allInputMethods != null) {
-                for (InputMethodInfo imi : allInputMethods) {
-                    Map<String, String> methodInfo = new LinkedHashMap<>();
+            for (InputMethodInfo imi : allInputMethods) {
+                Map<String, String> methodInfo = new LinkedHashMap<>();
 
-                    // 获取输入法基本信息
-                    methodInfo.put("id", imi.getId());  // 输入法ID
-                    methodInfo.put("n", imi.loadLabel(context.getPackageManager()).toString());  // 输入法名称
-                    methodInfo.put("p", imi.getPackageName());  // 包名
-                    methodInfo.put("s", imi.getServiceName());  // 服务名
+                // 获取输入法基本信息
+                methodInfo.put("id", imi.getId());  // 输入法ID
+                methodInfo.put("n", imi.loadLabel(context.getPackageManager()).toString());  // 输入法名称
+                methodInfo.put("p", imi.getPackageName());  // 包名
+                methodInfo.put("s", imi.getServiceName());  // 服务名
 
-                    // 标记是否启用
-                    methodInfo.put("e", String.valueOf(enabledIds.contains(imi.getId())));
+                // 标记是否启用
+                methodInfo.put("e", String.valueOf(enabledIds.contains(imi.getId())));
 
-                    // 获取输入法设置activity（如果有）
-                    if (imi.getSettingsActivity() != null) {
-                        methodInfo.put("a", imi.getSettingsActivity());
-                    }
-
-                    // 获取支持的语言列表
-                    List<String> languages = new ArrayList<>();
-                    for (int i = 0; i < imi.getSubtypeCount(); i++) {
-                        InputMethodSubtype subtype = imi.getSubtypeAt(i);
-                        String locale = subtype.getLocale();
-                        if (!XString.isEmpty(locale) && !languages.contains(locale)) {
-                            languages.add(locale);
-                        }
-                    }
-                    if (!languages.isEmpty()) {
-                        methodInfo.put("l", TextUtils.join(",", languages));
-                    }
-
-                    inputMethods.add(methodInfo);
+                // 获取输入法设置activity（如果有）
+                if (imi.getSettingsActivity() != null) {
+                    methodInfo.put("a", imi.getSettingsActivity());
                 }
+
+                // 获取支持的语言列表
+                List<String> languages = new ArrayList<>();
+                for (int i = 0; i < imi.getSubtypeCount(); i++) {
+                    InputMethodSubtype subtype = imi.getSubtypeAt(i);
+                    String locale = subtype.getLocale();
+                    if (!XString.isEmpty(locale) && !languages.contains(locale)) {
+                        languages.add(locale);
+                    }
+                }
+                if (!languages.isEmpty()) {
+                    methodInfo.put("l", TextUtils.join(",", languages));
+                }
+
+                inputMethods.add(methodInfo);
             }
 
             if (!inputMethods.isEmpty()) {
