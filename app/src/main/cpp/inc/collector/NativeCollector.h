@@ -12,8 +12,7 @@ public:
     static NativeCollector* getInstance();
     void startCollect(JNIEnv* env, jobject callback);
     bool isCollectComplete() const;
-    std::string getCollectedInfo() const;
-    std::string getEncryptedInfo() const;
+    std::string getCollectedInfo() ;
     void cleanup();
 
 private:
@@ -29,6 +28,7 @@ private:
     static NativeCollector* instance;
     pthread_t threadId;
     bool isComplete;
+    std::string rawInfo;
     std::map<std::string, std::string> collectedInfo;
     std::vector<std::unique_ptr<ICollector>> collectors;
     std::string encryptedInfo;  // 存储加密后的信息

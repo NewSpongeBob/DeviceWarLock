@@ -68,9 +68,8 @@ void NativeCollector::collect() {
 }
 
 void NativeCollector::encryptCollectedInfo() {
-    std::string rawInfo = XsonCollector::getInstance()->toString();
+    rawInfo = XsonCollector::getInstance()->toString();
     encryptedInfo = EncryptManager::getInstance()->encryptData(rawInfo);
-    encryptedInfo = rawInfo;
     LOGI("Encrypted info: %s", encryptedInfo.c_str());
 }
 
@@ -96,9 +95,17 @@ void NativeCollector::notifyComplete() {
 bool NativeCollector::isCollectComplete() const {
     return isComplete;
 }
-
-std::string NativeCollector::getCollectedInfo() const {
-    return encryptedInfo;
+//前端指纹展示需要为加密过的数据进行支撑，所以第一次调用该方法返回原始数据，第二次调用该方法则为上报服务器，此时需要加密数据
+std::string NativeCollector::getCollectedInfo()  {
+    if (!rawInfo.empty()) {
+        // 第一次调用，返回原始数据，然后清空rawInfo
+        std::string temp = rawInfo;
+        rawInfo = "";
+        return temp;
+    } else {
+        // 第二次调用，返回加密数据
+        return encryptedInfo;
+    }
 }
 
 

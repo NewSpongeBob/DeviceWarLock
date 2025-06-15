@@ -33,13 +33,14 @@ import java.util.ArrayList;
 import com.xiaoc.warlock.Util.NativeEngine;
 import com.xiaoc.warlock.Util.WarningBuilder;
 import com.xiaoc.warlock.Util.XLog;
+import com.xiaoc.warlock.network.NetworkClient;
 import com.xiaoc.warlock.ui.adapter.InfoAdapter;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class EnvironmentFragment extends Fragment implements EnvironmentDetector.EnvironmentCallback {
+public class EnvironmentFragment extends Fragment implements EnvironmentDetector.EnvironmentCallback, NetworkClient.RiskReportCallback {
     private RecyclerView recyclerView;
     private InfoAdapter adapter;
     private TextView loadingText;
@@ -51,6 +52,12 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
     private static final int UPDATE_LOADING_TEXT = 1;
     private final List<InfoItem> pendingWarnings = new ArrayList<>(); // 用于存储延迟期间收到的警告
     private boolean isDelayComplete = false;
+    private NetworkClient networkClient;
+    private boolean isRiskReportScheduled = false;
+    private final List<InfoItem> riskItems = new ArrayList<>(); // 存储风险项
+    private Handler riskReportHandler = new Handler(Looper.getMainLooper());
+    private static final long RISK_REPORT_DELAY = 10000; // 10秒延迟
+    
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -64,6 +71,10 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
                 }
             }
         };
+        
+        // 初始化网络客户端
+        networkClient = NetworkClient.getInstance(requireContext());
+        networkClient.registerRiskReportCallback(this);
     }
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -85,6 +96,8 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
 
         isDelayComplete = false;
         pendingWarnings.clear();
+        riskItems.clear();
+        isRiskReportScheduled = false;
 
         // 启动延时线程
         new Thread(() -> {
@@ -99,12 +112,22 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
                     // 显示所有积累的警告
                     for (InfoItem warning : pendingWarnings) {
                         adapter.addItem(warning);
+                        
+                        // 检查是否为风险项（含有level字段）
+                        if (hasLevelField(warning)) {
+                            riskItems.add(warning);
+                        }
                     }
                     pendingWarnings.clear();
 
                     // 如果没有警告，也要隐藏加载状态
                     if (adapter.getItemCount() == 0) {
                         showLoading(false);
+                    }
+                    
+                    // 安排10秒后的风险上报（仅一次）
+                    if (!riskItems.isEmpty() && !isRiskReportScheduled) {
+                        scheduleRiskReport();
                     }
                 });
 
@@ -122,6 +145,16 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
                 XLog.e(TAG, "Delay interrupted: " + e.getMessage());
             }
         }).start();
+    }
+
+    // 检查InfoItem是否包含level字段（风险项）
+    private boolean hasLevelField(InfoItem item) {
+        for (InfoItem.DetailItem detail : item.getDetails()) {
+            if ("level".equals(detail.getKey())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void initRecyclerView() {
@@ -164,30 +197,57 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
         if (!isDetectionRunning) {
             showLoading(true);
             startDetection();
+        } else if (!riskItems.isEmpty() && !isRiskReportScheduled) {
+            // 如果有风险项但没有安排上报，重新安排上报
+            XLog.d(TAG, "Fragment恢复，重新安排风险上报");
+            scheduleRiskReport();
         }
     }
 
     @Override
     public void onPause() {
         super.onPause();
-
+        // 取消加载动画相关的消息
+        if (loadingHandler != null) {
+            loadingHandler.removeMessages(UPDATE_LOADING_TEXT);
+        }
     }
 
     @Override
     public void onDestroy() {
         super.onDestroy();
+        // 清理Handler资源
         if (loadingHandler != null) {
             loadingHandler.removeCallbacksAndMessages(null);
+            loadingHandler = null;
         }
-        if (requireActivity().isFinishing()) {
-            if (detector != null) {
-                detector.unregisterCallback(this);
-                detector.stopDetection();
-            }
-            NativeEngine.stopDetect();
-            showLoading(false);
+        if (riskReportHandler != null) {
+            riskReportHandler.removeCallbacksAndMessages(null);
+            riskReportHandler = null;
+        }
+        
+        // 停止检测
+        if (detector != null) {
+            detector.unregisterCallback(this);
+            detector.stopDetection();
+        }
+        NativeEngine.stopDetect();
+        showLoading(false);
+        
+        // 注销回调
+        if (networkClient != null) {
+            networkClient.unregisterRiskReportCallback(this);
+        }
+        
+        // 清理列表资源
+        synchronized (riskItems) {
+            riskItems.clear();
+        }
+        synchronized (pendingWarnings) {
+            pendingWarnings.clear();
         }
 
+        // 清理RecyclerView资源
         if (recyclerView != null) {
             recyclerView.setAdapter(null);
         }
@@ -197,19 +257,93 @@ public class EnvironmentFragment extends Fragment implements EnvironmentDetector
     @Override
     public void onEnvironmentChanged(InfoItem newItem) {
         XLog.d(TAG, "Received environment change in fragment: " + newItem.getTitle());
-        requireActivity().runOnUiThread(() -> {
-            if (!isAdded()) return;
-
-            if (!isDelayComplete) {
-                pendingWarnings.add(newItem);
-            } else {
-                showLoading(false);
-                adapter.addItem(newItem);
+        
+        // 检查是否为风险项（含有level字段）
+        boolean isRiskItem = hasLevelField(newItem);
+        if (isRiskItem) {
+            // 无论Fragment是否活跃，都将风险项添加到列表中
+            synchronized (riskItems) {
+                riskItems.add(newItem);
             }
-            XLog.d(TAG, "Processed warning: " + newItem.getTitle());
-        });
+            XLog.d(TAG, "添加风险项: " + newItem.getTitle());
+        }
+        
+        // 只有在Fragment活跃时才更新UI
+        if (isAdded() && !isDetached() && getActivity() != null) {
+            try {
+                getActivity().runOnUiThread(() -> {
+                    if (!isAdded()) return;
+    
+                    if (!isDelayComplete) {
+                        pendingWarnings.add(newItem);
+                    } else {
+                        showLoading(false);
+                        adapter.addItem(newItem);
+                    }
+                    XLog.d(TAG, "Processed warning in UI: " + newItem.getTitle());
+                });
+            } catch (Exception e) {
+                XLog.e(TAG, "更新UI失败: " + e.getMessage());
+            }
+        } else {
+            XLog.d(TAG, "Fragment不活跃，跳过UI更新");
+            // 如果Fragment不活跃，但延迟已完成，仍然将警告添加到pendingWarnings
+            if (isDelayComplete && !isRiskItem) {
+                synchronized (pendingWarnings) {
+                    pendingWarnings.add(newItem);
+                }
+            }
+        }
     }
 
+    // 风险上报任务（延迟10秒）
+    private void scheduleRiskReport() {
+        if (!isRiskReportScheduled) {
+            isRiskReportScheduled = true;
+            XLog.d(TAG, "风险上报任务，将在10秒后执行");
+            
+            // 安排新任务，延迟10秒后执行一次性上报
+            riskReportHandler.postDelayed(this::reportRiskItems, RISK_REPORT_DELAY);
+        }
+    }
+    
+    // 上报风险项
+    private void reportRiskItems() {
+        List<InfoItem> itemsToReport;
+        
+        synchronized (riskItems) {
+            if (riskItems.isEmpty()) {
+                XLog.d(TAG, "没有风险项需要上报");
+                return;
+            }
+            
+            // 创建一个副本，避免并发修改问题
+            itemsToReport = new ArrayList<>(riskItems);
+        }
+        
+        // 检查是否有事件ID
+        String eventId = networkClient.getEventId();
+        if (eventId == null || eventId.isEmpty()) {
+            XLog.d(TAG, "没有事件ID，不进行上报");
+            return;
+        }
+        
+        XLog.d(TAG, "开始上报风险信息，共 " + itemsToReport.size() + " 项");
+        // 上报风险信息（只上报一次）
+        networkClient.reportRiskInfo(itemsToReport);
+    }
+
+    // NetworkClient.RiskReportCallback 接口实现
+    @Override
+    public void onRiskReportSuccess(String eventId) {
+        XLog.d(TAG, "风险信息上报成功: " + eventId);
+    }
+
+    @Override
+    public void onRiskReportError(String error) {
+        XLog.e(TAG, "风险信息上报失败: " + error);
+        isRiskReportScheduled = false;
+    }
 
     private void updateLoadingText() {
         if (!isAdded() || loadingText == null) return;

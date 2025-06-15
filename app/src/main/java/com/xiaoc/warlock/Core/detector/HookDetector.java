@@ -16,7 +16,13 @@ import java.util.List;
 public class HookDetector extends BaseDetector {
     private static final String MAPS_FILE = "/proc/self/maps";
     private static final String RWX_PERMISSION = "rwx";  // 可读可写可执行权限标记
-
+    @Override
+    public void detect() {
+        isPtraceAttached();
+        hasTracerPid();
+        isDebuggerConnected();
+        hasRWXSegments();
+    }
     public static class SuspiciousSegment {
         public String address;    // 内存地址范围
         public String permission; // 权限
@@ -39,13 +45,7 @@ public class HookDetector extends BaseDetector {
         super(context, callback);
     }
 
-    @Override
-    public void detect() {
-        isPtraceAttached();
-        hasTracerPid();
-        isDebuggerConnected();
-        hasRWXSegments();
-    }
+
     public void isPtraceAttached() {
         try {
             // 尝试自我附加ptrace

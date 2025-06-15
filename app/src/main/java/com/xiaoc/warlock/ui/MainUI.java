@@ -82,24 +82,7 @@ public class MainUI {
             }
         }
     }
-    // 获取当前页面索引
-    public int getCurrentPage() {
-        return viewPager.getCurrentItem();
-    }
 
-    // 切换到指定页面
-    public void setCurrentPage(int page) {
-        viewPager.setCurrentItem(page);
-    }
-
-    // 添加新的控制方法
-    public void enableUserSwipe(boolean enable) {
-        viewPager.setUserInputEnabled(enable);
-    }
-
-    public void setPageTransformer(ViewPager2.PageTransformer transformer) {
-        viewPager.setPageTransformer(transformer);
-    }
 
     public void showBottomSheetMenu() {
         BottomSheetDialog dialog = new BottomSheetDialog(activity);
@@ -110,10 +93,10 @@ public class MainUI {
             dialogManager.showAboutDialog();
         });
 
-        view.findViewById(R.id.btn_explain).setOnClickListener(v -> {
-            dialog.dismiss();
-            dialogManager.showexplainDialog();
-        });
+//        view.findViewById(R.id.btn_explain).setOnClickListener(v -> {
+//            dialog.dismiss();
+//            dialogManager.showexplainDialog();
+//        });
 
         view.findViewById(R.id.btn_feedback).setOnClickListener(v -> {
             dialog.dismiss();

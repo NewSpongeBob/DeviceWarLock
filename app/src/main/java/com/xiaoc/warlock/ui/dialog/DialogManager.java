@@ -37,9 +37,7 @@ public class DialogManager {
                                 "• 生成设备唯一标识\n" +
                                 "• 分析环境特征\n\n" +
                                 "开发者：xiaoc\n\n" +
-                                "特别鸣谢：感谢zhenxi开发者在网上发布的文章，本项目得以在其分享的文章帮助下，用时一个月顺利完成。\n\n" +
-                                "项目开源计划：作者计划在2025年进行改机项目的研发，同时将本项目及其后端完整开源。\n\n" +
-                                "最后的话：本项目抛弃了性能体验，采用了各种加固和加密算法。如果你喜欢本项目并想了解更多，欢迎直接联系作者，当然也可以尝试破解。\n"
+                                "项目开源计划：作者计划在2025年进行改机项目的研发，同时将本项目及其后端完整开源。\n\n"
 
                 )
                 .setPositiveButton("确定", null)
@@ -47,7 +45,7 @@ public class DialogManager {
                     // 打开项目主页
                     try {
                         Intent intent = new Intent(Intent.ACTION_VIEW);
-                        intent.setData(Uri.parse("https://github.com/yourusername/warlock"));
+                        intent.setData(Uri.parse("https://github.com/imxiaoc996/DeviceWarLock"));
                         activity.startActivity(intent);
                     } catch (Exception e) {
                         Toast.makeText(activity, "无法打开浏览器", Toast.LENGTH_SHORT).show();
@@ -116,7 +114,7 @@ public class DialogManager {
     private void openGitHub() {
         try {
             Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse("https://github.com/xiaoc-arch/DeviceWarLock/issues"));  // 替换成你的GitHub仓库地址
+            intent.setData(Uri.parse("https://github.com/imxiaoc996/DeviceWarLock/issues"));
             activity.startActivity(intent);
         } catch (Exception e) {
             Toast.makeText(activity, "无法打开浏览器", Toast.LENGTH_SHORT).show();

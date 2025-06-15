@@ -32,6 +32,7 @@ public class FingerprintCollector {
     private final List<FingerprintCallback> callbacks = new ArrayList<>();
     private static FingerprintCollector instance;
     private static final String TAG = "FingerprintCollector";
+    private String eventId = null;
     
     // 需要进行MD5加密的键列表
     private static final Set<String> MD5_KEYS = new HashSet<>(Arrays.asList(
@@ -61,6 +62,29 @@ public class FingerprintCollector {
 
     public void unregisterCallback(FingerprintCallback callback) {
         callbacks.remove(callback);
+    }
+    
+    /**
+     * 设置事件ID并显示
+     * @param eventId 要显示的事件ID
+     * @param isSuccess 是否获取/上报成功
+     * @param errorMsg 错误信息，如果isSuccess为false则使用此信息
+     */
+    public void setAndDisplayEventId(String eventId, boolean isSuccess, String errorMsg) {
+        this.eventId = eventId;
+        
+        // 创建事件ID展示项
+        InfoItem eventIdItem = new InfoItem("Event ID", "事件ID信息");
+        if (isSuccess) {
+            eventIdItem.addDetail("state", "success");
+            eventIdItem.addDetail("event_id", eventId);
+        } else {
+            eventIdItem.addDetail("state", "error");
+            eventIdItem.addDetail("state", "failed");
+        }
+        
+        // 通知回调
+        notifyCallbacks(eventIdItem);
     }
 
     public void collectFingerprint() {
@@ -127,8 +151,7 @@ public class FingerprintCollector {
             addJsonDataToInfoItem(jsonObject, nativeInfo, new String[]{"n1","n3","n9","n10","n11","n12","n15"},
                     new String[]{"n1","n3","n9","n10","n11","n12","n15"});
             notifyCallbacks(nativeInfo);
-
-
+            
         } catch (JSONException e) {
             XLog.e(TAG, "Error parsing Native fingerprint: " + e.getMessage());
         }

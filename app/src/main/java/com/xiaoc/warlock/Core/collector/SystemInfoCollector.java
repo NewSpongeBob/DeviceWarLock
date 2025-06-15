@@ -8,7 +8,6 @@ import android.hardware.Sensor;
 import android.hardware.SensorManager;
 import android.hardware.input.InputManager;
 import android.media.MediaDrm;
-import android.os.Build;
 import android.os.StatFs;
 import android.view.InputDevice;
 
@@ -23,10 +22,12 @@ import com.xiaoc.warlock.crypto.MD5Util;
 import android.os.Process;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.LinkedHashMap;
@@ -60,6 +61,7 @@ public class SystemInfoCollector extends BaseCollector {
         collectDataDirUid();     // a69
         collectTargetApkPaths();    // a70
         collectSystemFontHash();    // a80
+        collectSystemServices();    // a75
     }
     /**
      * 收集传感器信息
@@ -860,5 +862,123 @@ public class SystemInfoCollector extends BaseCollector {
         }
 
     }
+    /**
+     * 采集系统服务列表信息（指纹字段a75）
+     */
+    private void collectSystemServices() {
+        try {
+            List<Map<String, Object>> servicesList = new ArrayList<>();
 
+            // 方法1：优先尝试通过ServiceManager反射获取
+            List<String> services = getSystemServicesViaReflection();
+
+            // 方法2：如果反射失败，尝试通过service list命令获取
+            if (services.isEmpty()) {
+                services = getSystemServicesViaCommand();
+            }
+
+            // 方法3：如果前两种方法都失败，尝试通过dumpsys获取
+            if (services.isEmpty()) {
+                services = getSystemServicesViaDumpsys();
+            }
+
+            // 转换为结构化数据
+            for (String serviceName : services) {
+                Map<String, Object> serviceInfo = new LinkedHashMap<>();
+                serviceInfo.put("n", serviceName);  // 服务名称
+
+                // 尝试获取服务实例并检查是否可用
+                try {
+                    Object service = context.getSystemService(serviceName);
+                    serviceInfo.put("a", service != null);  // 是否可访问
+                } catch (Exception e) {
+                    serviceInfo.put("a", false);
+                }
+
+                servicesList.add(serviceInfo);
+            }
+
+            if (!servicesList.isEmpty()) {
+                Map<String, Object> result = new LinkedHashMap<>();
+                result.put("c", services.size());  // 服务总数
+                result.put("l", servicesList);     // 服务列表详情
+
+                // 添加额外信息：关键服务是否存在
+                Map<String, Boolean> criticalServices = new LinkedHashMap<>();
+                criticalServices.put("window", services.contains("window"));
+                criticalServices.put("power", services.contains("power"));
+                criticalServices.put("activity", services.contains("activity"));
+                criticalServices.put("package", services.contains("package"));
+                result.put("k", criticalServices);
+
+                putInfo("a75", result);
+            } else {
+                putFailedInfo("a75");
+            }
+        } catch (Exception e) {
+            XLog.e(TAG, "Failed to collect system services: " + e.getMessage());
+            putFailedInfo("a75");
+        }
+    }
+
+    /**
+     * 通过反射ServiceManager获取系统服务列表
+     */
+    private List<String> getSystemServicesViaReflection() {
+        List<String> services = new ArrayList<>();
+        try {
+            Class<?> serviceManagerClass = Class.forName("android.os.ServiceManager");
+            Method listServicesMethod = serviceManagerClass.getMethod("listServices");
+            String[] serviceNames = (String[]) listServicesMethod.invoke(null);
+            if (serviceNames != null) {
+                services.addAll(Arrays.asList(serviceNames));
+            }
+        } catch (Exception e) {
+            XLog.d(TAG, "Reflection method failed, fallback to next method");
+        }
+        return services;
+    }
+
+    /**
+     * 执行service list命令获取系统服务列表
+     */
+    private List<String> getSystemServicesViaCommand() {
+        List<String> services = new ArrayList<>();
+        try {
+            XCommandUtil.CommandResult result = XCommandUtil.execute("service list");
+            if (result.isSuccess()) {
+                String[] lines = result.getSuccessMsg().split("\n");
+                for (String line : lines) {
+                    if (line.contains(": [")) {
+                        String serviceName = line.split(": \\[")[0].trim();
+                        services.add(serviceName);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            XLog.d(TAG, "Service command failed, fallback to next method");
+        }
+        return services;
+    }
+
+    /**
+     * dumpsys命令获取系统服务列表
+     */
+    private List<String> getSystemServicesViaDumpsys() {
+        List<String> services = new ArrayList<>();
+        try {
+            XCommandUtil.CommandResult result = XCommandUtil.execute("dumpsys -l");
+            if (result.isSuccess()) {
+                String[] lines = result.getSuccessMsg().split("\n");
+                for (String line : lines) {
+                    if (!line.startsWith(" ") && !line.isEmpty()) {
+                        services.add(line.trim());
+                    }
+                }
+            }
+        } catch (Exception e) {
+            XLog.d(TAG, "Dumpsys method failed");
+        }
+        return services;
+    }
 }

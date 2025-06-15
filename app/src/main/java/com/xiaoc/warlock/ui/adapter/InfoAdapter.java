@@ -19,13 +19,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class InfoAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
-    private final List<InfoItem> items = new ArrayList<>();
+    private final List<InfoItem> items;
     private final boolean isEnvironmentInfo;
     private static final int TYPE_NORMAL = 0;
     private static final int TYPE_EMPTY = 1;
 
     public InfoAdapter(boolean isEnvironmentInfo) {
         this.isEnvironmentInfo = isEnvironmentInfo;
+        this.items = new ArrayList<>();
+    }
+    
+    public InfoAdapter(List<InfoItem> items) {
+        this.isEnvironmentInfo = false;
+        this.items = items;
     }
 
     @NonNull

@@ -8,7 +8,8 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:clipToPadding="false"
-        android:padding="8dp" />
+        android:padding="8dp"
+        android:visibility="gone" />
 
     <TextView
         android:id="@+id/loadingText"
@@ -17,6 +18,6 @@
         android:layout_gravity="center"
         android:textSize="18sp"
         android:textColor="@android:color/darker_gray"
-        android:visibility="gone" />
+        android:visibility="visible" />
 
 </FrameLayout>

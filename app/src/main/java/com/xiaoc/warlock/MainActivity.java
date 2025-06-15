@@ -7,13 +7,10 @@ import com.xiaoc.warlock.Core.CollectCallback;
 import com.xiaoc.warlock.Core.Warlock;
 import com.xiaoc.warlock.Util.API;
 import com.xiaoc.warlock.Util.NativeEngine;
-import com.xiaoc.warlock.Util.XFile;
 import com.xiaoc.warlock.Util.XLog;
-import com.xiaoc.warlock.Util.Xson;
+import com.xiaoc.warlock.network.NetworkClient;
 import com.xiaoc.warlock.ui.MainUI;
 import org.json.JSONObject;
-import com.xiaoc.warlock.crypto.EncryptUtil;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 
@@ -21,12 +18,11 @@ import java.io.FileReader;
 public class MainActivity extends AppCompatActivity implements CollectCallback {
     private static final String TAG = "MainActivity";
     private Context context;
-    private MainUI mainUI;
     private boolean javaCollectComplete = false;
     private boolean nativeCollectComplete = false;
+    private NetworkClient networkClient;
     
     // 公共静态变量，供Fragment访问
-
     public static boolean sBothCollectComplete = false;
 
     @Override
@@ -48,9 +44,12 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
     }
     private void initEnvironment() {
         context = this;
-        mainUI = new MainUI(this);
+        new MainUI(this);
         API.setHideShowWarning();
         XLog.init(this, XLog.DEBUG, true);
+        
+        // 初始化网络客户端
+        networkClient = NetworkClient.getInstance(this);
     }
 
     private void startCollect() {
@@ -66,7 +65,7 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
             warlock.collectFingerprint();
             runOnUiThread(() -> {
                 javaCollectComplete = true;
-                checkAndPrintResult();
+                checkAndProcessResult();
             });
         }).start();
     }
@@ -75,12 +74,12 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
     public void onNativeCollectComplete() {
         runOnUiThread(() -> {
             nativeCollectComplete = true;
-            checkAndPrintResult();
+            checkAndProcessResult();
             XLog.d(TAG, "Native collection completed");
         });
     }
 
-    private void checkAndPrintResult() {
+    private void checkAndProcessResult() {
         XLog.d(TAG, "Check result - Java: " + javaCollectComplete + ", Native: " + nativeCollectComplete);
         if (!javaCollectComplete || !nativeCollectComplete) {
             return;
@@ -88,17 +87,7 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
 
         // 设置完成标志
         sBothCollectComplete = true;
-
-        try {
-            // 保存单独的结果
-            saveJavaResults();
-            saveNativeResults();
-
-            // 如果需要，还可以保存合并的结果
-            saveCombinedResults();
-        } catch (Exception e) {
-            XLog.e(TAG, "Error processing results: " + e.getMessage());
-        }
+        XLog.d(TAG, "Both Java and Native collection completed!");
     }
     
     /**
@@ -107,46 +96,6 @@ public class MainActivity extends AppCompatActivity implements CollectCallback {
      */
     public static boolean isCollectionComplete() {
         return sBothCollectComplete;
-    }
-    
-    private void saveCombinedResults() {
-        try {
-            JSONObject combined = new JSONObject();
-            combined.put("java_fingerprints", new JSONObject(Xson.getMapString(true)));
-            combined.put("native_fingerprints", new JSONObject(NativeEngine.getCollectedInfo()));
-
-            String combinedJson = combined.toString(4);  // 使用4空格缩进
-            //XLog.d(TAG, "Combined fingerprint result: " + combinedJson);
-            saveToFile("combined_fingerprint.txt", combinedJson);
-        } catch (Exception e) {
-            XLog.e(TAG, "Error combining results: " + e.getMessage());
-        }
-    }
-    private void saveJavaResults() {
-        String javaJson = Xson.getMapString(true);
-       // XLog.d(TAG, "Java fingerprint result: " + javaJson);
-        EncryptUtil encryptUtil = new EncryptUtil(javaJson);
-        saveToFile("java_fingerprint.txt", javaJson);
-    }
-
-    private void saveNativeResults() {
-        String nativeJson = NativeEngine.getCollectedInfo();
-        if (nativeJson == null || nativeJson.isEmpty()) {
-            XLog.w(TAG, "No native info collected");
-            return;
-        }
-        XLog.d(TAG, "Native fingerprint result: " + nativeJson);
-        saveToFile("native_fingerprint.txt", nativeJson);
-    }
-
-    private void saveToFile(String filename, String content) {
-        if (XFile.writeExternalFile(this, filename, content, true)) {
-            XLog.d(TAG, "Results saved to external storage: " + filename);
-        } else if (XFile.writePrivateFile(this, filename, content, true)) {
-            XLog.d(TAG, "Results saved to private storage: " + filename);
-        } else {
-            XLog.e(TAG, "Failed to save results: " + filename);
-        }
     }
 
     @Override
