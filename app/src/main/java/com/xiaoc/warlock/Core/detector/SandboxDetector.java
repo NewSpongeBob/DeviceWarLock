@@ -1,5 +1,6 @@
 package com.xiaoc.warlock.Core.detector;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Application;
 import android.content.Context;
@@ -235,6 +236,7 @@ public class SandboxDetector extends BaseDetector  {
     private void checkATMProxy(List<String> abnormalDetails) {
         try {
             Class<?> atmClass = Class.forName("android.app.ActivityTaskManager");
+            @SuppressLint("BlockedPrivateApi")
             Method getServiceMethod = atmClass.getDeclaredMethod("getService");
             getServiceMethod.setAccessible(true);
 

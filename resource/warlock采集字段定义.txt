@@ -1,0 +1,269 @@
+属性映射：
+a1：getProp
+a2:所处的安卓架构 64位or32位
+a3:通过Settings.Secure拿到 ad_aaid和Google API获取aaid，两个都获取到了就会输出两个的值，如果只有一个获取到了就只会输出一个
+a4:cat /proc/sys/kernel/random/boot_id
+a5:Android id  Settings.Secure拿到
+ a6:DRM ID 做SHA256加密后的结果
+a7:谷歌服务拿到device id，content://com.google.android.gsf.gservices  算是Android id的一种
+a8:设备厂商
+a9:设备型号
+a10:context.getApplicationInfo().dataDir; 应用的私有数据目录
+a11:getProp fingerprint
+a12:获取当前系统的时区信息。timeZone.getID()
+a13:Setting字段
+a14：/data/app下的私有目录
+a15:蓝牙适配器获取获取蓝牙地址
+a16:包名
+a17：获取电话管理器里面的数据，有：imei、imsi、iccid、line1_number，如果是双卡设备则会去获取第二张卡的信息
+a18:获取这些fingerprint："build", "bootimage", "odm", "product", "system_ext", "system", "vendor"，然后使用index[i]+"="+fingerprint(md5)+"&"的结果来拼接。还会返回一个index，这个index代表是在哪些index获取到了
+例子：build=1f2be064c72201d4e5413f53579a9f83&odm=1f2be064c72201d4e5413f53579a9f83&product=1f2be064c72201d4e5413f53579a9f83&system_ext=1f2be064c72201d4e5413f53579a9f83&system=1f2be064c72201d4e5413f53579a9f83&vendor=1f2be064c72201d4e5413f53579a9f83
+a19:cat /proc/cpuinfo
+a20:Serial
+a21：设备存储的总字节数 statFs.getTotalBytes()
+a22：设备的内存大小 memoryInfo.totalMem
+a23：注册一个广播，获取电池状态,new IntentFilter("android.intent.action.BATTERY_CHANGED"),registerReceiver.getIntExtra("health", -1)，如果拿到的int为2则会健康，3则为过热
+a24：通过反射获取Android系统中PowerProfile类的电池容量、从系统文件读取、通过BatteryManager、从Build.PROP读取。
+a25:遍历SensorList,拿到传感器信息
+a26:cat /proc/self/mountstats
+a27:获取了前后两颗摄像头的信息。
+a28:获取了输入管理器的输入管理器id list，然后拿到这些id的name和vendor
+a29:stat /data/misc/keychain/serial_blacklist.txt 返回的Access:  获取到纳米级时间戳
+a30:stat /data/misc/keychain/serial_blacklist.txt 返回的Change:  获取到纳米级时间戳
+a31stat /data/misc/keychain/serial_blacklist.txt 返回的Modify:  获取到纳米级时间戳
+a32：stat /data/misc/keychain/pubkey_blacklist.txt 返回的Modify 获取到纳米级时间戳
+a33：stat /data/misc/keychain/pubkey_blacklist.txt 返回的Access 获取到纳米级时间戳
+a34：stat /data/misc/keychain/pubkey_blacklist.txt 返回的Change 获取到纳米级时间戳
+a35：stat /data/misc/keychain 返回的Access 获取到纳米级时间戳
+a36：stat /data/misc/keychain 返回的Change:  获取到纳米级时间戳
+a37：stat /sdcard/Download 这里面会有两个值：access和change
+a38：stat /sdcard/Android/ 这里面会有两个值：access和change
+a39：stat /data/local/tmp 这里面会有两个值：access和change
+a40 stat /data/data/com.xiaoc.warlock 。如果返回true则代表存在这个文件
+a41:
+ "n": "wlan0",                        // 接口名称
+"u": true,                           // 是否启用
+"display_name": "Wireless Interface", // 显示名称
+"loopback": false,                   // 是否回环接口
+"virtual": false,                    // 是否虚拟接口
+"point_to_point": false,             // 是否点对点接口
+"multicast": true,                   // 是否支持多播
+"mtu": 1500,                         // 最大传输单元
+"mac": "00:11:22:33:44:55",         // MAC地址
+"addresses": [                       // IP地址列表
+    "192.168.1.100",                // IPv4地址
+    "fe80::1234:5678:9abc:def0"     // IPv6地址
+]
+a42:获取OpenGL ES版本
+a43:获取当前Java虚拟机可用的处理器数量、处理器频率、处理器温度
+a44:如果能够正常使用反射则v值为true，否则为false
+a45:获取当前网络的国家/地区ISO代码
+a46:通过WifiManager获取网卡地址
+a47:通过两种方式获取签名分别是SignatureX509和Binder的方式
+a48:	
+a49: 表示数据未开启（对应 DATA_DISCONNECTED）,3: 表示数据已开启（对应其他所有状态）
+a50:stat /storage/emulated/0。基本思路是调用stat函数，去获取/storage/emulated/0目录下的块大小和总数据块数量，还有空闲块的数量。
+代码逻辑很明显，通过syscall去调用statfs函数，然后获取stat结构体中的数据，最后算一下
+t: 总空间（字节）
+f: 空闲空间（字节）
+a: 可用空间（字节）
+bs: 块大小
+s: 原始输出字符串
+a52：
+设备标识：
+uuid
+ad_aaid
+ReaperAssignedDeviceId
+IMEI
+mdm_uuid
+ps_imei
+op_security_uuid
+ai_stored_imei
+device_serial
+a53：通过stat获取文件的最近访问时间、最近修改时间、最近改变时间，Innode编号:
+/sdcard/Android/data/.nomedia
+/sdcard/Android/data/com.google.android.gms
+/sdcard/
+/storage/emulated/0
+a54:屏幕亮度、屏幕尺寸和屏幕超时时间
+a55:内部存储（EMMC或UFS闪存）的序列号：/sys/block/mmcblk0/device/serial  （核心）
+a56:显示设备序列号：/sys/devices/soc0/serial_number  (核心)
+a57:内部存储SD卡的CID：/sys/block/mmcblk0/device/cid（核心）
+a58:input设备相关，读取/proc/bus/input/devices，获取注册的input设备信息，比如Name和Sysfs。
+a59:输入法列表:
+a60:AccountManager->getAccounts
+a61:AudioManager->getStreamVolume
+a62:MediaDrm->getPropertyString
+a63: cat /sys/class/net/wlan0/address
+cat /sys/devices/virtual/net/wlan0/address
+a64:收集硬盘信息
+a65:附近网卡信息
+a66:获取IPV6
+a67:uname -a
+a68:获取App的UID
+a69：通过ls -l 获取自己文件路径的Uid
+a70：获取一下包名所在的/data/app下的路径。apk源文件路径
+com.sankuai.meituan			 美团
+com.tencent.mm				 微信
+bin.mt.plus					 mt管理器
+com.smile.gifmaker			 快手
+com.ss.android.ugc.aweme	 抖音
+com.eg.android.AlipayGphone  支付宝
+a75：系统服务列表
+a80：遍历/system/fonts目录下的tf字体文件并拼接起来最后进行md5加密
+
+===========================================================
+n1:DRM ID
+n2:ro.build.version.release
+	ro.product.model
+	ro.product.brand
+	ro.boot.bootloader
+	ro.build.version.securitypatch
+	ro.build.version.incremental
+	gsm.version.baseband
+	gsm.version.ril-impl
+	ro.build.fingerprint
+	ro.build.description
+	ro.build.product
+	ro.boot.vbmeta.digest
+	ro.hardware
+	ro.product.name
+	ro.product.board
+	ro.recovery_id
+	ro.expect.recovery_id
+	ro.board.platform
+	ro.product.manufacturer
+	ro.product.device
+	sys.usb.state 检测USB调试开启状态
+	ro.setupwizard.mode 也是一个核心，但是未知是什么
+	ro.build.id
+	ro.build.tags
+	ro.build.type
+	ro.debuggable
+	persist.sys.meid
+	=====================然后还有一些不常见的，可能是其他厂商的设备中才会有的字段：
+	vendor.serialno
+	sys.serialno
+	persist.sys.wififactorymac
+	ro.boot.deviceid
+	ro.rpmb.board
+	ro.vold.serialno
+	persist.oppo.wlan.macaddress
+	persist.sys.oppo.serialno
+	ril.serialnumber
+	ro.boot.ap_serial
+	ro.boot.uniqueno
+	persist.sys.oppo.opmuuid
+	persist.sys.oppo.nlp.id
+	persist.sys.oplus.nlp.id
+	persist.sys.dcs.hash
+	ro.ril.oem.sno
+	ro.ril.oem.psno
+	persist.vendor.sys.fp.uid
+	ro.ril.miui.imei0
+	ro.ril.miui.imei1
+	ro.ril.oem.imei
+	ro.ril.oem.meid
+	persist.radio.imei
+	persist.radio.imei1
+	persist.radio.imei2
+	persist.sys.lite.uid
+	persist.radio.serialno
+	vendor.boot.serialno
+	persist.sys.oneplus.serialno
+	ro.meizu.hardware.imei1
+	ro.meizu.hardware.imei2
+	ro.meizu.hardware.meid
+	ro.meizu.hardware.psn
+	ro.meizu.hardware.sn
+	persist.radio.factory_phone_sn
+	persist.radio.factory_sn
+	ro.meizu.serialno
+	ro.boot.psn
+	ro.boot.meid
+	ro.boot.imei1
+	ro.boot.imei2
+	ro.wifimac
+	ro.wifimac_2
+	ro.vendor.deviceid
+	ro.isn
+	ro.vendor.isn
+	persist.radio.device.imei
+	persist.radio.device.imei2
+	persist.radio.device.meid
+	persist.radio.device.meid2
+	persist.asus.serialno
+	sys.wifimac
+	sys.bt.address
+	persist.btpw.bredr
+	persist.radio.imei
+	persist.radio.imei2
+	persist.radio.meid
+	persist.radio.meid2
+	ro.boot.fpd.uid
+	ro.vendor.boot.serialno
+	ro.boot.wifimacaddr
+	persist.sys.wifi.mac
+	persist.sys.wifi_mac
+	sys.prop.writeimei
+	ril.gm.imei
+	ril.cdma.meid
+	ro.boot.em.did
+	ro.qchip.serialno
+	ro.ril.oem.btmac
+	ro.ril.oem.ifimac
+n3:获取网卡信息，分Android版本去获取，在Android10以下使用Netlinker方式通过SVC去获取，第二是在Android10以及以上通过netlink和Ioctl的方式去获取。
+Ioctl的方式只会获取这三张卡的地址："wlan0", "eth0", "rmnet0"
+n4:"/system/build.prop" svc openat去获取 不一定能获取到
+n5:"/odm/etc/build.prop" svc openat去获取 不一定能获取到
+n6:"/product/build.prop" svc openat去获取 不一定能获取到
+n7:"/vendor/build.prop" svc openat去获取  不一定能获取到
+n8:/proc/sys/kernel/random/uuid svc openat去获取
+n9:/sys/block/mmcblk0/device/cid svc openat去获取 
+n10:/sys/devices/soc0/serial_number svc openat去获取
+n11:/proc/misc svc openat去获取
+n12:/proc/sys/kernel/random/boot_id svc openat去获取
+n13:获取以下三个值/ popen uname -a / svc uname函数 / 和svc openat去读/proc/version，
+n14：popen("getprop", "r")
+n15:popen("ip a", "r")。包含这些网卡的信息 {"lo", "dummy0", "wlan0", "wlan1", "eth0", "rmnet0"}。有IP、状态和mac地址。
+n16:popen("service list","r")
+n17:statfs /storage/emulated/0
+n18：Native 获取DRM ID。通过dlsym去导入链接上libmediandk.so，然后调用getPropertyByteArray函数去获取
+n19:{
+    "Processor": "AArch64 Processor rev 0 (aarch64)",  // CPU型号
+    "BogoMIPS": "38.40",                              // CPU性能指标
+    "Features": "fp asimd evtstrm aes pmull sha1 sha2 crc32 atomics fphp asimdhp cpuid asimdrdm lrcpc dcpop asimddp",  // CPU支持的特性
+    "CPU implementer": "0x51",                        // CPU制造商代码
+    "CPU architecture": "8",                          // CPU架构版本
+    "CPU variant": "0xd",                            // CPU变体版本
+    "CPU part": "0x805",                             // CPU部件号
+    "CPU revision": "14",                            // CPU修订版本
+    "Hardware": "Qualcomm Technologies, Inc SM7225",  // 硬件平台
+    "processors": ["0", "1", "2", "3", "4", "5", "6", "7"]  // CPU核心列表
+}
+n20:{
+    "cpu_arch": "arm64",           // CPU架构类型
+    "Hardware": "Qualcomm SM8550", // 处理器型号
+    "board": "taro",               // 主板代号
+    "platform": "taro",            // 平台代号
+    "hardware": "qcom"             // 硬件厂商
+}
+n21:
+{
+    "MemTotal": "5506944 kB",     // 总内存大小
+    "MemFree": "286980 kB",       // 空闲内存
+    "MemAvailable": "2418212 kB", // 可用内存
+    "Buffers": "6456 kB",         // 缓冲区大小
+    "Cached": "2257060 kB",       // 缓存大小
+    "SwapCached": "176452 kB",    // 交换区缓存
+    "Active": "1672620 kB",       // 活跃内存
+    "Inactive": "1804084 kB",     // 不活跃内存
+    "SwapTotal": "4194300 kB",    // 交换区总大小
+    "SwapFree": "3020796 kB",     // 交换区空闲大小
+    "Dirty": "304 kB",            // 等待写入磁盘的内存
+    "Writeback": "0 kB",          // 正在写入磁盘的内存
+    "AnonPages": "1211720 kB",    // 匿名页面大小
+    "Mapped": "684688 kB",        // 文件映射大小
+    "Shmem": "37016 kB",          // 共享内存大小
+    "KReclaimable": "192164 kB"   // 可回收的内核内存
+}
