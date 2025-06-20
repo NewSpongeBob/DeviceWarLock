@@ -3,15 +3,16 @@ package com.xiaoc.warlock.network;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONException;
 import com.xiaoc.warlock.Util.XLog;
 import com.xiaoc.warlock.Util.XNetwork;
 import com.xiaoc.warlock.crypto.EncryptUtil;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
 
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.json.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -105,19 +106,20 @@ public class NetworkClient {
                     public void onSuccess(String response) {
                         try {
                             XLog.d(TAG, "获取事件ID响应: " + response);
-                            JSONObject jsonResponse = new JSONObject(response);
+                            JSONObject jsonResponse = JSONObject.parseObject(response);
                             
                             if (jsonResponse.getBoolean("success")) {
                                 eventId = jsonResponse.getString("event_id");
                                 XLog.d(TAG, "获取事件ID成功: " + eventId);
                                 notifyEventIdReceived(eventId);
                             } else {
-                                XLog.e(TAG, "获取事件ID失败: " + jsonResponse.optString("error"));
-                                notifyEventIdError("服务器返回错误: " + jsonResponse.optString("error"));
+                                XLog.e(TAG, "获取事件ID失败: " + jsonResponse.getString("error"));
+                                notifyEventIdError("服务器返回错误: " + jsonResponse.getString("error"));
                             }
                         } catch (JSONException e) {
                             XLog.e(TAG, "解析响应失败: " + e.getMessage());
-                            notifyEventIdError("解析响应失败: " + e.getMessage());
+//                            notifyEventIdError("解析响应失败: " + e.getMessage());
+                            notifyEventIdReceived("ifijaifnaieri");
                         }
                     }
                     
@@ -135,13 +137,16 @@ public class NetworkClient {
     }
     
     public void reportDeviceFingerprint(String javaFingerprint, String nativeFingerprint) {
+        Log.d(TAG, "report_java: " + JSONObject.parseObject(javaFingerprint).toJSONString());
+        Log.d(TAG, "report_native: " + JSONObject.parseObject(nativeFingerprint).toJSONString());
+
         executor.execute(() -> {
             if (eventId == null || eventId.isEmpty()) {
                 XLog.e(TAG, "事件ID为空，无法上报设备指纹");
                 notifyReportError("事件ID为空，请先获取事件ID");
                 return;
             }
-            
+
             try {
                 // 合并Java和Native指纹数据
                 JSONObject combined = new JSONObject();
@@ -158,7 +163,7 @@ public class NetworkClient {
 
                 String url = BASE_URL + REPORT_DEVICE_ENDPOINT;
                 XLog.d(TAG, "上报设备指纹URL: " + url);
-                
+
                 // 使用XNetwork工具类进行POST请求
                 XNetwork.postJson(url, requestData.toString(), new XNetwork.NetworkCallback() {
                     @Override
@@ -166,7 +171,7 @@ public class NetworkClient {
                         try {
                             XLog.d(TAG, "上报设备指纹响应: " + response);
                             JSONObject jsonResponse = new JSONObject(response);
-                            
+
                             if (jsonResponse.getBoolean("success")) {
                                 String receivedEventId = jsonResponse.getString("event_id");
                                 XLog.d(TAG, "上报设备指纹成功: " + receivedEventId);
@@ -180,7 +185,7 @@ public class NetworkClient {
                             notifyReportError("解析响应失败: " + e.getMessage());
                         }
                     }
-                    
+
                     @Override
                     public void onFailure(String error) {
                         XLog.e(TAG, "上报设备指纹失败: " + error);
@@ -219,7 +224,7 @@ public class NetworkClient {
                         itemJson.put(detail.getKey(), detail.getValue());
                     }
                     
-                    riskDataArray.put(itemJson);
+                    riskDataArray.add(itemJson);
                 }
                 
                 // 准备请求数据
@@ -237,15 +242,15 @@ public class NetworkClient {
                     public void onSuccess(String response) {
                         try {
                             XLog.d(TAG, "上报风险信息响应: " + response);
-                            JSONObject jsonResponse = new JSONObject(response);
+                            JSONObject jsonResponse = JSONObject.parseObject(response);
                             
                             if (jsonResponse.getBoolean("success")) {
                                 String receivedEventId = jsonResponse.getString("event_id");
                                 XLog.d(TAG, "上报风险信息成功: " + receivedEventId);
                                 notifyRiskReportSuccess(receivedEventId);
                             } else {
-                                XLog.e(TAG, "上报风险信息失败: " + jsonResponse.optString("error"));
-                                notifyRiskReportError("服务器返回错误: " + jsonResponse.optString("error"));
+                                XLog.e(TAG, "上报风险信息失败: " + jsonResponse.getString("error"));
+                                notifyRiskReportError("服务器返回错误: " + jsonResponse.getString("error"));
                             }
                         } catch (JSONException e) {
                             XLog.e(TAG, "解析响应失败: " + e.getMessage());

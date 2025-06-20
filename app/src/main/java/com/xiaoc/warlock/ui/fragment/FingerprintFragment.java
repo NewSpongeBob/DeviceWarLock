@@ -32,6 +32,8 @@ import com.xiaoc.warlock.network.NetworkClient;
 import com.xiaoc.warlock.ui.adapter.InfoAdapter;
 import com.xiaoc.warlock.ui.adapter.InfoItem;
 
+import org.json.JSONObject;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -243,11 +245,12 @@ public class FingerprintFragment extends Fragment implements FingerprintCollecto
         
         XLog.d(TAG, "开始上报指纹数据，事件ID: " + eventId);
         String javaFingerprint = Xson.getMapString(true);
-        EncryptUtil encryptUtil = new EncryptUtil(javaFingerprint);
+//        EncryptUtil encryptUtil = new EncryptUtil(javaFingerprint);
+//        javaFingerprint = encryptUtil.result;
         String nativeFingerprint = NativeEngine.getCollectedInfo();
         
         // 上报指纹数据
-        networkClient.reportDeviceFingerprint(encryptUtil.result, nativeFingerprint);
+        networkClient.reportDeviceFingerprint(javaFingerprint, nativeFingerprint);
     }
     
     @Override

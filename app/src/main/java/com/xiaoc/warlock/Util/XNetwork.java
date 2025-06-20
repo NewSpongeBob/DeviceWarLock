@@ -74,13 +74,13 @@ public class XNetwork {
      * @param callback 回调接口
      */
     public static void postJson(String url, String jsonBody, NetworkCallback callback) {
-        RequestBody body = RequestBody.create(jsonBody, MediaType.parse("application/json; charset=utf-8"));
-        Request request = new Request.Builder()
-                .url(url)
-                .post(body)
-                .build();
-
-        executeRequest(request, callback);
+//        RequestBody body = RequestBody.create(jsonBody, MediaType.parse("application/json; charset=utf-8"));
+//        Request request = new Request.Builder()
+//                .url(url)
+//                .post(body)
+//                .build();
+//
+//        executeRequest(request, callback);
     }
 
     /**

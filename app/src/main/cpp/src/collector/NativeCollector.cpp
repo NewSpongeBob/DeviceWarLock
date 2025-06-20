@@ -69,7 +69,8 @@ void NativeCollector::collect() {
 
 void NativeCollector::encryptCollectedInfo() {
     rawInfo = XsonCollector::getInstance()->toString();
-    encryptedInfo = EncryptManager::getInstance()->encryptData(rawInfo);
+//    encryptedInfo = EncryptManager::getInstance()->encryptData(rawInfo);
+    encryptedInfo = rawInfo;
     LOGI("Encrypted info: %s", encryptedInfo.c_str());
 }
 
