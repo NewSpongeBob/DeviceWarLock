@@ -170,15 +170,15 @@ public class NetworkClient {
                     public void onSuccess(String response) {
                         try {
                             XLog.d(TAG, "上报设备指纹响应: " + response);
-                            JSONObject jsonResponse = new JSONObject(response);
+                            JSONObject jsonResponse = JSONObject.parseObject(response);
 
                             if (jsonResponse.getBoolean("success")) {
                                 String receivedEventId = jsonResponse.getString("event_id");
                                 XLog.d(TAG, "上报设备指纹成功: " + receivedEventId);
                                 notifyReportSuccess(receivedEventId);
                             } else {
-                                XLog.e(TAG, "上报设备指纹失败: " + jsonResponse.optString("error"));
-                                notifyReportError("服务器返回错误: " + jsonResponse.optString("error"));
+                                XLog.e(TAG, "上报设备指纹失败: " + jsonResponse.getString("error"));
+                                notifyReportError("服务器返回错误: " + jsonResponse.getString("error"));
                             }
                         } catch (JSONException e) {
                             XLog.e(TAG, "解析响应失败: " + e.getMessage());
