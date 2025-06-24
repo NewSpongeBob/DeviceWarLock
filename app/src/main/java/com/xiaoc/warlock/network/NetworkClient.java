@@ -95,6 +95,9 @@ public class NetworkClient {
     }
     
     public void requestEventId() {
+        notifyEventIdReceived("ifijaifnaieri");
+        return;
+        /*
         executor.execute(() -> {
             try {
                 String url = BASE_URL + GENERATE_EVENT_ID_ENDPOINT;
@@ -118,8 +121,7 @@ public class NetworkClient {
                             }
                         } catch (JSONException e) {
                             XLog.e(TAG, "解析响应失败: " + e.getMessage());
-//                            notifyEventIdError("解析响应失败: " + e.getMessage());
-                            notifyEventIdReceived("ifijaifnaieri");
+                            notifyEventIdError("解析响应失败: " + e.getMessage());
                         }
                     }
                     
@@ -134,6 +136,7 @@ public class NetworkClient {
                 notifyEventIdError("创建请求失败: " + e.getMessage());
             }
         });
+         */
     }
     
     public void reportDeviceFingerprint(String javaFingerprint, String nativeFingerprint) {

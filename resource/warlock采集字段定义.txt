@@ -4,7 +4,7 @@ a2:所处的安卓架构 64位or32位
 a3:通过Settings.Secure拿到 ad_aaid和Google API获取aaid，两个都获取到了就会输出两个的值，如果只有一个获取到了就只会输出一个
 a4:cat /proc/sys/kernel/random/boot_id
 a5:Android id  Settings.Secure拿到
- a6:DRM ID 做SHA256加密后的结果
+a6:DRM ID 做SHA256加密后的结果
 a7:谷歌服务拿到device id，content://com.google.android.gsf.gservices  算是Android id的一种
 a8:设备厂商
 a9:设备型号
@@ -111,6 +111,10 @@ com.ss.android.ugc.aweme	 抖音
 com.eg.android.AlipayGphone  支付宝
 a75：系统服务列表
 a80：遍历/system/fonts目录下的tf字体文件并拼接起来最后进行md5加密
+WEB_FINGERPRINT = "a81";  // 复合指纹（MD5值）
+WEB_USER_AGENT = "a82";   // 仅存储User Agent，不参与复合指纹
+WEB_WEBVIEW_VERSION = "a88";
+WEB_SYSTEM_LANGUAGE = "a89";
 
 ===========================================================
 n1:DRM ID

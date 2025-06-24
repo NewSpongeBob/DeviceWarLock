@@ -21,11 +21,16 @@ import org.json.JSONObject;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class FingerprintCollector {
     private final Context context;
@@ -35,9 +40,10 @@ public class FingerprintCollector {
     private String eventId = null;
     
     // 需要进行MD5加密的键列表
-    private static final Set<String> MD5_KEYS = new HashSet<>(Arrays.asList(
-            "a3","a5","a7","a14", "a21", "a52","a53","a58","a64","a69","a70","a6" ,"n1","n3","n8","n9","n10","n11","n12","n15","n17","n20","n21"
-    ));
+//    private static final Set<String> MD5_KEYS = new HashSet<>(Arrays.asList(
+//            "a3","a5","a7","a14", "a21", "a52","a53","a58","a64","a69","a70","a6" ,"n1","n3","n8","n9","n10","n11","n12","n15","n17","n20","n21"
+//    ));
+    private static final Set<String> MD5_KEYS = new HashSet<>();
 
     public interface FingerprintCallback {
         void onFingerprintCollected(InfoItem item);
@@ -115,6 +121,48 @@ public class FingerprintCollector {
             }
         }
     }
+
+    private Map<String, String[]> getFiledMap(){
+        Map<String, String> filed = new LinkedHashMap<>();
+        filed.put("a3", "aaid");
+        filed.put("a4", "boot_id");
+        filed.put("a5", "android_id");
+        filed.put("a6", "drm_id");
+        filed.put("a7", "google_device_id");
+        filed.put("a14", "私有目录");
+        filed.put("a21", "设备存储的总字节数");
+        filed.put("a22", "设备的内存大小");
+        filed.put("a52", "设备标识");
+        filed.put("a53", "stat获取文件信息");
+        filed.put("a58", "input设备相关");
+        filed.put("a69", "通过ls -l 获取自己文件路径的Uid");
+        filed.put("a70", "apk源文件路径");
+        filed.put("a80", "遍历/system/fonts");
+        filed.put("a81", "WEB_FINGERPRINT");
+
+        filed.put("n1", "drm_id");
+        filed.put("n3", "网卡信息");
+        filed.put("n9", "cid");
+        filed.put("n10", "serial_number");
+        filed.put("n11", "/proc/misc");
+        filed.put("n12", "boot_id");
+        filed.put("n15", "ip a");
+
+        Map<String, String[]> filedAll = new HashMap<>();
+        String[] keyList = new String[filed.size()];
+        String[] valueList = new String[filed.size()];
+        int i = 0;
+        for (Map.Entry<String, String> entry : filed.entrySet()) {
+            String key = entry.getKey();
+            String value = entry.getValue();
+            keyList[i] = key;
+            valueList[i] = value;
+            i++;
+        }
+        filedAll.put("key", keyList);
+        filedAll.put("value", valueList);
+        return filedAll;
+    }
     
     /**
      * 解析并展示Java层收集的指纹信息
@@ -129,9 +177,10 @@ public class FingerprintCollector {
                     new String[]{"Vendor","Model","CPU_ABI","AndroidVersion","FingerPrint","KernelInfo"});
             notifyCallbacks(basicInfo);
             //Java层设备信息
+            
+            Map<String, String[]> filed = getFiledMap();
             InfoItem javaInfo = new InfoItem("Java Fingerprint", "java指纹信息");
-            addJsonDataToInfoItem(jsonObject, javaInfo, new String[]{"a3","a4","a5","a6", "a7","a14", "a21","a52","a53","a58","a69" ,"a70","a80","a81"},
-                    new String[]{"a3","a4","a5","a6", "a7","a14", "a21","a52","a53","a58","a69" ,"a70","a80","a81"});
+            addJsonDataToInfoItem(jsonObject, javaInfo, Objects.requireNonNull(filed.get("key")), filed.get("value"));
             notifyCallbacks(javaInfo);
 
         } catch (JSONException e) {
@@ -148,8 +197,8 @@ public class FingerprintCollector {
 
             //Native层设备信息
             InfoItem nativeInfo = new InfoItem("Native Fingerprint", "native指纹信息");
-            addJsonDataToInfoItem(jsonObject, nativeInfo, new String[]{"n1","n3","n9","n10","n11","n12","n15"},
-                    new String[]{"n1","n3","n9","n10","n11","n12","n15"});
+            Map<String, String[]> filed = getFiledMap();
+            addJsonDataToInfoItem(jsonObject, nativeInfo, Objects.requireNonNull(filed.get("key")), filed.get("value"));
             notifyCallbacks(nativeInfo);
             
         } catch (JSONException e) {
