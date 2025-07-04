@@ -115,6 +115,7 @@ WEB_FINGERPRINT = "a81";  // 复合指纹（MD5值）
 WEB_USER_AGENT = "a82";   // 仅存储User Agent，不参与复合指纹
 WEB_WEBVIEW_VERSION = "a88";
 WEB_SYSTEM_LANGUAGE = "a89";
+a90: app个数(用户_非系统安全时间 000结尾_系统)
 
 ===========================================================
 n1:DRM ID

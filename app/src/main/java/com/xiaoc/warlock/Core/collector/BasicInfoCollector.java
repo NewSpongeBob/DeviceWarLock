@@ -7,6 +7,7 @@ import android.bluetooth.BluetoothAdapter;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.media.MediaDrm;
@@ -21,6 +22,7 @@ import android.os.Parcel;
 import android.provider.Settings;
 import android.util.ArrayMap;
 import android.util.Base64;
+import android.util.Log;
 
 import com.google.android.gms.ads.identifier.AdvertisingIdClient;
 import com.xiaoc.warlock.BuildConfig;
@@ -454,8 +456,22 @@ public class BasicInfoCollector extends BaseCollector {
 
     }
 
+    @SuppressLint("DefaultLocale")
     private void getAppPackage(){
         try {
+            List<PackageInfo> packageInfoList = context.getPackageManager().getInstalledPackages(128);
+            int x = 0, y = 0, z = 0;
+            for (PackageInfo packageinfo: packageInfoList) {
+                if ((packageinfo.applicationInfo.flags & 1) == 1){
+                    x += 1;
+                }else if (Long.toString(packageinfo.firstInstallTime).endsWith("000")){
+                    y += 1;
+                }else {
+                    z += 1;
+                    Log.d(TAG, "getAppPackage: " + packageinfo.packageName);
+                }
+            }
+            putInfo("a90", String.format("%1$d_%2$d_%3$d", z, y, x));
             // 收集所有获取包名的方法结果
             String contextPkg = context.getPackageName();
             String appInfoPkg = context.getApplicationInfo().packageName;

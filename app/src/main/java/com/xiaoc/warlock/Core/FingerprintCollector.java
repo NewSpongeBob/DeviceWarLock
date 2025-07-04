@@ -139,6 +139,7 @@ public class FingerprintCollector {
         filed.put("a70", "apk源文件路径");
         filed.put("a80", "遍历/system/fonts");
         filed.put("a81", "WEB_FINGERPRINT");
+        filed.put("a90", "app个数(用户_系统)");
 
         filed.put("n1", "drm_id");
         filed.put("n3", "网卡信息");
